@@ -1,0 +1,196 @@
+{
+  "hotels": [
+    {
+      "id": 1,
+      "name": "The Marine House",
+      "description": "A quiet coastal retreat with airy rooms and views of the Arabian Sea.",
+      "city": "Mumbai",
+      "image": "https://images.unsplash.com/photo-1564501049412-61c2a3083791?auto=format&fit=crop&w=1000&q=85",
+      "rating": 4.8,
+      "price": 8500,
+      "rooms": [
+        {
+          "category": "Single",
+          "description": "A serene room for one, with a queen bed and work desk.",
+          "price": 8500,
+          "available": 4,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Double",
+          "description": "A spacious room with a king bed, ideal for two guests.",
+          "price": 11200,
+          "available": 6,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Suite",
+          "description": "A sea-view suite with a separate lounge and premium amenities.",
+          "price": 16900,
+          "available": 2,
+          "maxOccupancy": 3
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Kala Ghoda Courtyard",
+      "description": "A heritage-inspired stay in the heart of Mumbai’s arts district.",
+      "city": "Mumbai",
+      "image": "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1000&q=85",
+      "rating": 4.6,
+      "price": 7200,
+      "rooms": [
+        {
+          "category": "Single",
+          "description": "A peaceful heritage room for solo city explorers.",
+          "price": 7200,
+          "available": 0,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Double",
+          "description": "A characterful room for two with courtyard views.",
+          "price": 9800,
+          "available": 4,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Suite",
+          "description": "An elegant suite with a private sitting area.",
+          "price": 14300,
+          "available": 2,
+          "maxOccupancy": 3
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Bandra Bay Suites",
+      "description": "Contemporary suites close to the promenade, cafés and city nightlife.",
+      "city": "Mumbai",
+      "image": "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1000&q=85",
+      "rating": 4.7,
+      "price": 9100,
+      "rooms": [
+        {
+          "category": "Single",
+          "description": "A bright, modern room with all the essentials.",
+          "price": 9100,
+          "available": 3,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Double",
+          "description": "A generous king room designed for relaxing together.",
+          "price": 12400,
+          "available": 7,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Suite",
+          "description": "A refined suite with a lounge and bay-facing windows.",
+          "price": 18400,
+          "available": 3,
+          "maxOccupancy": 3
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "The Deccan Pavilion",
+      "description": "A graceful garden stay that pairs Pune warmth with modern comfort.",
+      "city": "Pune",
+      "image": "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1000&q=85",
+      "rating": 4.7,
+      "price": 6200,
+      "rooms": [
+        {
+          "category": "Single",
+          "description": "A restful garden-facing room for one guest.",
+          "price": 6200,
+          "available": 6,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Double",
+          "description": "A calming double room with an inviting king bed.",
+          "price": 8500,
+          "available": 8,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Suite",
+          "description": "A spacious suite with a garden terrace and lounge.",
+          "price": 12800,
+          "available": 2,
+          "maxOccupancy": 3
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Koregaon Park House",
+      "description": "Leafy surroundings, thoughtful interiors and exceptional local dining.",
+      "city": "Pune",
+      "image": "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1000&q=85",
+      "rating": 4.5,
+      "price": 5800,
+      "rooms": [
+        {
+          "category": "Single",
+          "description": "A stylish room for a quiet solo escape.",
+          "price": 5800,
+          "available": 5,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Double",
+          "description": "A comfortable room for two in leafy Koregaon Park.",
+          "price": 7900,
+          "available": 6,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Suite",
+          "description": "A generous suite with a reading nook and dining space.",
+          "price": 11900,
+          "available": 2,
+          "maxOccupancy": 3
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Sahakar Residency",
+      "description": "A polished, restful base for discovering Pune’s old city and culture.",
+      "city": "Pune",
+      "image": "https://images.unsplash.com/photo-1606402179428-a579de2f76e3?auto=format&fit=crop&w=1000&q=85",
+      "rating": 4.6,
+      "price": 5400,
+      "rooms": [
+        {
+          "category": "Single",
+          "description": "A practical and polished room for one traveller.",
+          "price": 5400,
+          "available": 7,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Double",
+          "description": "A warm, comfortable double room with city views.",
+          "price": 7400,
+          "available": 5,
+          "maxOccupancy": 3
+        },
+        {
+          "category": "Suite",
+          "description": "A relaxed suite with extra living space for longer stays.",
+          "price": 10600,
+          "available": 3,
+          "maxOccupancy": 3
+        }
+      ]
+    }
+  ]
+}
