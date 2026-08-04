@@ -5,6 +5,11 @@ import BookingConfirmation from "./pages/BookingConfirmation";
 import Bookings from "./pages/Bookings";
 import AdminLogin from "./pages/AdminLogin";
 import AdminHome from "./pages/AdminHome";
+import ManagerDashboard from "./pages/manager/ManagerDashboard";
+import RoomManagement from "./pages/manager/RoomManagement";
+import UpcomingBookings from "./pages/manager/UpcomingBookings";
+import ProtectedRoute from "./components/manager/ProtectedRoute";
+import ManagerLayout from "./components/manager/ManagerLayout";
 
 export default function App() {
   return (
@@ -15,6 +20,13 @@ export default function App() {
       <Route path="/bookings" element={<Bookings />} />
       <Route path="/admin" element={<AdminLogin />} />
       <Route path="/admin/home" element={<AdminHome />} />
+      <Route element={<ProtectedRoute allowedRoles={["MANAGER"]} />}>
+        <Route path="/manager" element={<ManagerLayout />}>
+          <Route index element={<ManagerDashboard />} />
+          <Route path="rooms" element={<RoomManagement />} />
+          <Route path="bookings" element={<UpcomingBookings />} />
+        </Route>
+      </Route>
     </Routes>
   );
 }

@@ -206,6 +206,12 @@
         "name": "Ankita Admin",
         "email": "ankita_admin@gmail.com",
         "userType": "admin"
+      },
+      {
+        "name": "Riya Manager",
+        "email": "riya.manager@stayease.com",
+        "userType": "manager",
+        "hotelId": 1
       }
     ],
     "token": "mock-token-789",
