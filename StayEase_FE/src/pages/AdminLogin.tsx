@@ -34,16 +34,24 @@ export default function AdminLogin() {
       const data: { login?: LoginResponse } = await response.json();
       const users = data.login?.users ?? [];
       const expectedPassword = data.login?.allowedPassword ?? "123456";
-      const matchingUser = users.find((user) => user.email.toLowerCase() === email.trim().toLowerCase());
+      const matchingUser = users.find(
+        (user) => user.email.toLowerCase() === email.trim().toLowerCase(),
+      );
 
-      if (matchingUser && matchingUser.userType?.toLowerCase() === "admin" && password.trim() === expectedPassword) {
+      if (
+        matchingUser &&
+        matchingUser.userType?.toLowerCase() === "admin" &&
+        password.trim() === expectedPassword
+      ) {
         window.localStorage.setItem("stayease-user-email", matchingUser.email);
         window.localStorage.setItem("stayease-user-type", "admin");
         navigate("/admin/home", { replace: true });
         return;
       }
 
-      setError("Invalid admin credentials. Use ankita_admin@gmail.com with password 123456.");
+      setError(
+        "Invalid admin credentials. Use ankita_admin@gmail.com with password 123456.",
+      );
     } catch {
       setError("Unable to load admin credentials.");
     } finally {
@@ -70,14 +78,30 @@ export default function AdminLogin() {
         <div className="booking-card">
           <div className="booking-card-content">
             <form className="form-grid" onSubmit={submitLogin}>
-              <label><span>Email</span>
-                <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="admin@example.com" />
+              <label>
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="admin@example.com"
+                />
               </label>
-              <label><span>Password</span>
-                <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 6 characters" />
+              <label>
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="At least 6 characters"
+                />
               </label>
               {error ? <p className="validation">{error}</p> : null}
-              <button className="search-button" type="submit" disabled={isSubmitting}>
+              <button
+                className="search-button"
+                type="submit"
+                disabled={isSubmitting}
+              >
                 {isSubmitting ? "Signing in..." : "Login as admin"}
               </button>
             </form>

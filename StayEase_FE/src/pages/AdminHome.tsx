@@ -21,17 +21,24 @@ export default function AdminHome() {
           <div className="booking-card-content">
             <div className="room-list">
               <article className="room-card">
-                <div className="room-icon" aria-hidden="true">＋</div>
+                <div className="room-icon" aria-hidden="true">
+                  ＋
+                </div>
                 <div className="room-info">
                   <h3>Create hotel listing</h3>
                   <p>Add a new property and make it available for bookings.</p>
                 </div>
               </article>
               <article className="room-card">
-                <div className="room-icon" aria-hidden="true">⚙</div>
+                <div className="room-icon" aria-hidden="true">
+                  ⚙
+                </div>
                 <div className="room-info">
                   <h3>More admin tools</h3>
-                  <p>Additional management actions will be added in the next steps.</p>
+                  <p>
+                    Additional management actions will be added in the next
+                    steps.
+                  </p>
                 </div>
               </article>
             </div>
