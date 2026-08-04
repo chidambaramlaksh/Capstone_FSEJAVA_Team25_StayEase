@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useBookings } from "../context/BookingContext";
+import { useAuth } from "../context/AuthContext";
 
 type Hotel = {
   id: number;
@@ -31,14 +32,19 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function formatDate(value: string) {
   if (!value) return "";
   return new Intl.DateTimeFormat("en-IN", {
-    day: "numeric", month: "short", year: "numeric",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   }).format(new Date(`${value}T00:00:00`));
 }
 
 export default function Home() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { getBookingsForUser } = useBookings();
-  const savedSearch = (location.state as { activeSearch?: Search } | null)?.activeSearch ?? null;
+  const { login: startManagerSession, logout: endManagerSession } = useAuth();
+  const savedSearch =
+    (location.state as { activeSearch?: Search } | null)?.activeSearch ?? null;
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [search, setSearch] = useState<Search>(() => {
     if (savedSearch) {
@@ -56,15 +62,22 @@ export default function Home() {
 
     try {
       const parsedSearch = JSON.parse(storedSearch) as Search;
-      return parsedSearch && typeof parsedSearch === "object" ? parsedSearch : emptySearch;
+      return parsedSearch && typeof parsedSearch === "object"
+        ? parsedSearch
+        : emptySearch;
     } catch {
       return emptySearch;
     }
   });
-  const [activeSearch, setActiveSearch] = useState<Search | null>(() => savedSearch);
+  const [activeSearch, setActiveSearch] = useState<Search | null>(
+    () => savedSearch,
+  );
   const [isSearchOpen, setIsSearchOpen] = useState(() => !savedSearch);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [loginForm, setLoginForm] = useState<LoginForm>({ email: "", password: "" });
+  const [loginForm, setLoginForm] = useState<LoginForm>({
+    email: "",
+    password: "",
+  });
   const [loginError, setLoginError] = useState("");
   const [loginSuccess, setLoginSuccess] = useState("");
   const [loggedInUser, setLoggedInUser] = useState<string | null>(null);
@@ -79,9 +92,12 @@ export default function Home() {
         setMockLogin(data.login ?? null);
 
         const storedEmail = window.localStorage.getItem("stayease-user-email");
-        if (storedEmail && data.login?.user?.email?.toLowerCase() === storedEmail.toLowerCase()) {
+        const storedUser = (data.login?.users ?? [data.login?.user]).find(
+          (user) => user?.email?.toLowerCase() === storedEmail?.toLowerCase(),
+        );
+        if (storedEmail && storedUser) {
           setLoggedInEmail(storedEmail);
-          setLoggedInUser(data.login.user?.name ?? "Guest");
+          setLoggedInUser(storedUser.name ?? "Guest");
         }
       })
       .catch(() => {
@@ -90,11 +106,19 @@ export default function Home() {
   }, []);
 
   const isValid = Boolean(
-    search.city && search.checkIn && search.checkOut && search.checkOut > search.checkIn,
+    search.city &&
+    search.checkIn &&
+    search.checkOut &&
+    search.checkOut > search.checkIn,
   );
-  const isLoginValid = emailPattern.test(loginForm.email.trim()) && loginForm.password.trim().length >= 6;
+  const isLoginValid =
+    emailPattern.test(loginForm.email.trim()) &&
+    loginForm.password.trim().length >= 6;
   const displayedHotels = useMemo(
-    () => activeSearch ? hotels.filter((hotel) => hotel.city === activeSearch.city) : [],
+    () =>
+      activeSearch
+        ? hotels.filter((hotel) => hotel.city === activeSearch.city)
+        : [],
     [activeSearch, hotels],
   );
 
@@ -119,7 +143,9 @@ export default function Home() {
     setLoginSuccess("");
 
     if (!isLoginValid) {
-      setLoginError("Please use a valid email and a password with at least 6 characters.");
+      setLoginError(
+        "Please use a valid email and a password with at least 6 characters.",
+      );
       return;
     }
 
@@ -131,19 +157,45 @@ export default function Home() {
     const requestedEmail = loginForm.email.trim().toLowerCase();
     const requestedPassword = loginForm.password.trim();
     const expectedPassword = mockLogin.allowedPassword ?? "123456";
-    const matchingUser = (mockLogin.users ?? [mockLogin.user]).find((user) => user?.email?.toLowerCase() === requestedEmail);
+    const matchingUser = (mockLogin.users ?? [mockLogin.user]).find(
+      (user) => user?.email?.toLowerCase() === requestedEmail,
+    );
 
     if (matchingUser && requestedPassword === expectedPassword) {
+      const role = matchingUser.userType?.toLowerCase();
+      if (role === "manager") {
+        const isManager = await startManagerSession(
+          requestedEmail,
+          requestedPassword,
+        );
+        if (!isManager) {
+          setLoginError("Unable to start the manager session.");
+          return;
+        }
+
+        window.localStorage.setItem("stayease-user-email", requestedEmail);
+        window.localStorage.setItem("stayease-user-type", "manager");
+        setLoginForm({ email: "", password: "" });
+        setIsLoginOpen(false);
+        navigate("/manager");
+        return;
+      }
+
       setLoggedInUser(matchingUser.name ?? "Guest");
       setLoggedInEmail(requestedEmail);
       window.localStorage.setItem("stayease-user-email", requestedEmail);
-      setLoginSuccess(`${mockLogin.message} (${matchingUser.userType ?? "User"})`);
+      window.localStorage.setItem("stayease-user-type", role ?? "user");
+      setLoginSuccess(
+        `${mockLogin.message} (${matchingUser.userType ?? "User"})`,
+      );
       setLoginForm({ email: "", password: "" });
       setIsLoginOpen(false);
       return;
     }
 
-    setLoginError("Invalid credentials. Try ankita@gmail.com with password 123456.");
+    setLoginError(
+      "Invalid credentials. Use a demo email with password 123456.",
+    );
   };
 
   const openLogin = () => {
@@ -163,49 +215,79 @@ export default function Home() {
     setLoggedInUser(null);
     setLoggedInEmail(null);
     window.localStorage.removeItem("stayease-user-email");
+    window.localStorage.removeItem("stayease-user-type");
+    endManagerSession();
     setLoginSuccess("You have been logged out.");
   };
 
   const userBookingsCount = getBookingsForUser(loggedInEmail).length;
-  const loggedInUserType = (mockLogin?.users ?? [mockLogin?.user]).find((user) => user?.email?.toLowerCase() === loggedInEmail?.toLowerCase())?.userType?.toLowerCase();
+  const loggedInUserType = (mockLogin?.users ?? [mockLogin?.user])
+    .find((user) => user?.email?.toLowerCase() === loggedInEmail?.toLowerCase())
+    ?.userType?.toLowerCase();
   const isAdminUser = loggedInUserType === "admin";
 
   return (
     <main>
       <header className="site-header">
         <div className="header-actions">
-          <a className="brand" href="/" aria-label="StayEase home"><span className="brand-mark">S</span> StayEase</a>
+          <a className="brand" href="/" aria-label="StayEase home">
+            <span className="brand-mark">S</span> StayEase
+          </a>
         </div>
         <div className="header-actions">
-          {activeSearch && <button className="change-search" onClick={() => setIsSearchOpen(true)}>Change search</button>}
-          {loggedInEmail ? <Link className="login-button" to="/bookings">View bookings{userBookingsCount ? ` (${userBookingsCount})` : ""}</Link> : null}
+          {activeSearch && (
+            <button
+              className="change-search"
+              onClick={() => setIsSearchOpen(true)}
+            >
+              Change search
+            </button>
+          )}
+          {loggedInEmail ? (
+            <Link className="login-button" to="/bookings">
+              View bookings{userBookingsCount ? ` (${userBookingsCount})` : ""}
+            </Link>
+          ) : null}
           {loggedInUser ? (
             <div className="auth-badge">
               <span>Hi, {loggedInUser}</span>
-              <button type="button" onClick={logout}>Logout</button>
+              <button type="button" onClick={logout}>
+                Logout
+              </button>
             </div>
           ) : (
-            <button className="login-button" type="button" onClick={openLogin}>Login</button>
+            <button className="login-button" type="button" onClick={openLogin}>
+              Login
+            </button>
           )}
         </div>
       </header>
 
       {(loginError || loginSuccess) && (
-        <div className={`auth-status ${loginError ? "auth-status--error" : "auth-status--success"}`}>
+        <div
+          className={`auth-status ${loginError ? "auth-status--error" : "auth-status--success"}`}
+        >
           {loginError || loginSuccess}
         </div>
       )}
 
       <section className="hero">
         <p className="eyebrow">FIND YOUR PERFECT STAY</p>
-        <h1>Comfort, wherever<br />you’re going.</h1>
+        <h1>
+          Comfort, wherever
+          <br />
+          you’re going.
+        </h1>
         <p>Thoughtfully selected stays in the cities you love.</p>
       </section>
 
       {isAdminUser ? (
         <section className="results" aria-live="polite">
           <div className="results-heading">
-            <div><p className="eyebrow">ADMIN DASHBOARD</p><h2>Choose an action</h2></div>
+            <div>
+              <p className="eyebrow">ADMIN DASHBOARD</p>
+              <h2>Choose an action</h2>
+            </div>
           </div>
           <div className="hotel-grid">
             <div className="hotel-card">
@@ -213,7 +295,9 @@ export default function Home() {
                 <div className="hotel-content">
                   <p className="city-label">MANAGEMENT</p>
                   <h3>Create hotel listing</h3>
-                  <p className="description">Add a new property and make it available for guests.</p>
+                  <p className="description">
+                    Add a new property and make it available for guests.
+                  </p>
                 </div>
               </article>
             </div>
@@ -222,7 +306,9 @@ export default function Home() {
                 <div className="hotel-content">
                   <p className="city-label">COMING SOON</p>
                   <h3>More admin options</h3>
-                  <p className="description">Additional management actions will be added in future steps.</p>
+                  <p className="description">
+                    Additional management actions will be added in future steps.
+                  </p>
                 </div>
               </article>
             </div>
@@ -231,69 +317,186 @@ export default function Home() {
       ) : activeSearch ? (
         <section className="results" aria-live="polite">
           <div className="results-heading">
-            <div><p className="eyebrow">AVAILABLE STAYS</p><h2>Hotels in {activeSearch.city}</h2></div>
-            <div className="trip-dates"><span>{formatDate(activeSearch.checkIn)}</span><i aria-hidden="true">→</i><span>{formatDate(activeSearch.checkOut)}</span></div>
+            <div>
+              <p className="eyebrow">AVAILABLE STAYS</p>
+              <h2>Hotels in {activeSearch.city}</h2>
+            </div>
+            <div className="trip-dates">
+              <span>{formatDate(activeSearch.checkIn)}</span>
+              <i aria-hidden="true">→</i>
+              <span>{formatDate(activeSearch.checkOut)}</span>
+            </div>
           </div>
           {displayedHotels.length ? (
             <div className="hotel-grid">
               {displayedHotels.map((hotel) => (
-                <Link className="hotel-card" key={hotel.id} to={`/hotel/${hotel.id}`} state={{ activeSearch }}>
+                <Link
+                  className="hotel-card"
+                  key={hotel.id}
+                  to={`/hotel/${hotel.id}`}
+                  state={{ activeSearch }}
+                >
                   <article>
                     <img src={hotel.image} alt={hotel.name} />
                     <div className="hotel-content">
                       <div className="hotel-title-row">
-                        <div><p className="city-label">{hotel.city}</p><h3>{hotel.name}</h3></div>
+                        <div>
+                          <p className="city-label">{hotel.city}</p>
+                          <h3>{hotel.name}</h3>
+                        </div>
                         <span className="rating">★ {hotel.rating}</span>
                       </div>
                       <p className="description">{hotel.description}</p>
-                      <p className="price"><strong>₹{hotel.price.toLocaleString("en-IN")}</strong> / night</p>
+                      <p className="price">
+                        <strong>₹{hotel.price.toLocaleString("en-IN")}</strong>{" "}
+                        / night
+                      </p>
                     </div>
                   </article>
                 </Link>
               ))}
             </div>
-          ) : <p className="empty-state">No stays found for these dates.</p>}
+          ) : (
+            <p className="empty-state">No stays found for these dates.</p>
+          )}
         </section>
-      ) : <section className="pre-search"><p>Your next memorable stay is just a search away.</p></section>}
+      ) : (
+        <section className="pre-search">
+          <p>Your next memorable stay is just a search away.</p>
+        </section>
+      )}
 
       {isSearchOpen && !isAdminUser && (
         <div className="modal-backdrop" role="presentation">
-          <section className="search-modal" role="dialog" aria-modal="true" aria-labelledby="search-title">
-            <span className="modal-icon" aria-hidden="true">⌂</span>
+          <section
+            className="search-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="search-title"
+          >
+            <span className="modal-icon" aria-hidden="true">
+              ⌂
+            </span>
             <p className="eyebrow">PLAN YOUR STAY</p>
             <h2 id="search-title">Where are you going?</h2>
-            <p className="modal-copy">Choose a city and dates to discover your ideal stay.</p>
+            <p className="modal-copy">
+              Choose a city and dates to discover your ideal stay.
+            </p>
             <div className="form-grid">
-              <label><span>City</span>
-                <select value={search.city} onChange={(event) => setSearch({ ...search, city: event.target.value })}>
-                  <option value="" disabled>Select city</option><option value="Mumbai">Mumbai</option><option value="Pune">Pune</option>
+              <label>
+                <span>City</span>
+                <select
+                  value={search.city}
+                  onChange={(event) =>
+                    setSearch({ ...search, city: event.target.value })
+                  }
+                >
+                  <option value="" disabled>
+                    Select city
+                  </option>
+                  <option value="Mumbai">Mumbai</option>
+                  <option value="Pune">Pune</option>
                 </select>
               </label>
-              <label><span>Check-in</span><input type="date" value={search.checkIn} onChange={(event) => setSearch({ ...search, checkIn: event.target.value })} /></label>
-              <label><span>Check-out</span><input type="date" min={search.checkIn || undefined} value={search.checkOut} onChange={(event) => setSearch({ ...search, checkOut: event.target.value })} /></label>
+              <label>
+                <span>Check-in</span>
+                <input
+                  type="date"
+                  value={search.checkIn}
+                  onChange={(event) =>
+                    setSearch({ ...search, checkIn: event.target.value })
+                  }
+                />
+              </label>
+              <label>
+                <span>Check-out</span>
+                <input
+                  type="date"
+                  min={search.checkIn || undefined}
+                  value={search.checkOut}
+                  onChange={(event) =>
+                    setSearch({ ...search, checkOut: event.target.value })
+                  }
+                />
+              </label>
             </div>
-            {search.checkIn && search.checkOut && search.checkOut <= search.checkIn && <p className="validation">Check-out must be after check-in.</p>}
-            <button className="search-button" disabled={!isValid} onClick={submitSearch}>Search hotels <span>→</span></button>
+            {search.checkIn &&
+              search.checkOut &&
+              search.checkOut <= search.checkIn && (
+                <p className="validation">Check-out must be after check-in.</p>
+              )}
+            <button
+              className="search-button"
+              disabled={!isValid}
+              onClick={submitSearch}
+            >
+              Search hotels <span>→</span>
+            </button>
           </section>
         </div>
       )}
 
       {isLoginOpen && (
-        <div className="modal-backdrop" role="presentation" onClick={closeLogin}>
-          <section className="search-modal login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title" onClick={(event) => event.stopPropagation()}>
-            <span className="modal-icon" aria-hidden="true">🔐</span>
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onClick={closeLogin}
+        >
+          <section
+            className="search-modal login-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="login-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="modal-icon" aria-hidden="true">
+              🔐
+            </span>
             <p className="eyebrow">ACCOUNT ACCESS</p>
             <h2 id="login-title">Login to StayEase</h2>
-            <p className="modal-copy">Use your email and password to continue.</p>
+            <p className="modal-copy">
+              Use your email and password to continue.
+            </p>
             <form className="form-grid" onSubmit={submitLogin}>
-              <label><span>Email</span>
-                <input type="email" value={loginForm.email} onChange={(event) => setLoginForm((current) => ({ ...current, email: event.target.value }))} placeholder="you@example.com" />
+              <label>
+                <span>Email</span>
+                <input
+                  type="email"
+                  value={loginForm.email}
+                  onChange={(event) =>
+                    setLoginForm((current) => ({
+                      ...current,
+                      email: event.target.value,
+                    }))
+                  }
+                  placeholder="you@example.com"
+                />
               </label>
-              <label><span>Password</span>
-                <input type="password" value={loginForm.password} onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))} placeholder="At least 6 characters" />
+              <label>
+                <span>Password</span>
+                <input
+                  type="password"
+                  value={loginForm.password}
+                  onChange={(event) =>
+                    setLoginForm((current) => ({
+                      ...current,
+                      password: event.target.value,
+                    }))
+                  }
+                  placeholder="At least 6 characters"
+                />
               </label>
-              <p className="validation">Use ankita@gmail.com and password 123456 for this demo.</p>
-              <button className="search-button" type="submit" disabled={!isLoginValid}>Login</button>
+              <p className="validation">
+                Demo: ankita@gmail.com or riya.manager@stayease.com — password
+                123456.
+              </p>
+              <button
+                className="search-button"
+                type="submit"
+                disabled={!isLoginValid}
+              >
+                Login
+              </button>
             </form>
           </section>
         </div>
