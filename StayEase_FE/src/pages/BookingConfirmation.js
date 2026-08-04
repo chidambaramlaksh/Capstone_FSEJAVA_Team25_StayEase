@@ -1,8 +1,17 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useBookings } from "../context/BookingContext";
 function formatDate(value) {
+    if (!value) {
+        return "—";
+    }
+    const parsedDate = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(parsedDate.getTime())) {
+        return "—";
+    }
     return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" })
-        .format(new Date(`${value}T00:00:00`));
+        .format(parsedDate);
 }
 function getNights(checkIn, checkOut) {
     const start = new Date(`${checkIn}T00:00:00`).getTime();
@@ -11,7 +20,13 @@ function getNights(checkIn, checkOut) {
 }
 export default function BookingConfirmation() {
     const location = useLocation();
+    const { addBooking } = useBookings();
     const booking = location.state;
+    useEffect(() => {
+        if (booking?.bookingEntry) {
+            addBooking(booking.bookingEntry);
+        }
+    }, [addBooking, booking]);
     if (!booking) {
         return _jsxs("main", { className: "page-message", children: [_jsx("h1", { children: "No booking selected" }), _jsx(Link, { to: "/", children: "Find a stay" })] });
     }

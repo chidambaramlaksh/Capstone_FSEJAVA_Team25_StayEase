@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useBookings } from "../context/BookingContext";
 
 type Room = {
   category: "Single" | "Double" | "Suite";
@@ -21,10 +22,17 @@ type Hotel = {
 
 type Search = { city: string; checkIn: string; checkOut: string };
 
+function getNights(checkIn: string, checkOut: string) {
+  const start = new Date(`${checkIn}T00:00:00`).getTime();
+  const end = new Date(`${checkOut}T00:00:00`).getTime();
+  return Math.max(1, Math.round((end - start) / 86_400_000));
+}
+
 export default function HotelDetails() {
   const { hotelId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { addBooking } = useBookings();
   const [hotel, setHotel] = useState<Hotel | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const activeSearch = (location.state as { activeSearch?: Search } | null)
@@ -61,8 +69,24 @@ export default function HotelDetails() {
       checkOut: "",
     };
     const bookingId = `SE-${Date.now().toString().slice(-8)}-${hotel.id}${room.category.charAt(0)}`;
+    const bookingEntry = {
+      bookingId,
+      hotelName: hotel.name,
+      hotelCity: hotel.city,
+      hotelImage: hotel.image,
+      roomCategory: room.category,
+      roomPrice: room.price,
+      maxOccupancy: room.maxOccupancy,
+      checkIn: bookingSearch.checkIn,
+      checkOut: bookingSearch.checkOut,
+      totalPrice: getNights(bookingSearch.checkIn, bookingSearch.checkOut) * room.price,
+      bookedOn: new Date().toISOString(),
+      userEmail: window.localStorage.getItem("stayease-user-email") ?? undefined,
+    };
+
+    addBooking(bookingEntry);
     navigate("/booking-confirmation", {
-      state: { bookingId, hotel, room, search: bookingSearch },
+      state: { bookingId, hotel, room, search: bookingSearch, bookingEntry },
     });
   };
 

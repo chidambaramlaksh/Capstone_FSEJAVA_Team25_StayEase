@@ -1,10 +1,17 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useBookings } from "../context/BookingContext";
+function getNights(checkIn, checkOut) {
+    const start = new Date(`${checkIn}T00:00:00`).getTime();
+    const end = new Date(`${checkOut}T00:00:00`).getTime();
+    return Math.max(1, Math.round((end - start) / 86400000));
+}
 export default function HotelDetails() {
     const { hotelId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
+    const { addBooking } = useBookings();
     const [hotel, setHotel] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const activeSearch = location.state
@@ -31,8 +38,23 @@ export default function HotelDetails() {
             checkOut: "",
         };
         const bookingId = `SE-${Date.now().toString().slice(-8)}-${hotel.id}${room.category.charAt(0)}`;
+        const bookingEntry = {
+            bookingId,
+            hotelName: hotel.name,
+            hotelCity: hotel.city,
+            hotelImage: hotel.image,
+            roomCategory: room.category,
+            roomPrice: room.price,
+            maxOccupancy: room.maxOccupancy,
+            checkIn: bookingSearch.checkIn,
+            checkOut: bookingSearch.checkOut,
+            totalPrice: getNights(bookingSearch.checkIn, bookingSearch.checkOut) * room.price,
+            bookedOn: new Date().toISOString(),
+            userEmail: window.localStorage.getItem("stayease-user-email") ?? undefined,
+        };
+        addBooking(bookingEntry);
         navigate("/booking-confirmation", {
-            state: { bookingId, hotel, room, search: bookingSearch },
+            state: { bookingId, hotel, room, search: bookingSearch, bookingEntry },
         });
     };
     return (_jsxs("main", { className: "details-page", children: [_jsxs("header", { className: "site-header", children: [_jsxs(Link, { className: "brand", to: "/", "aria-label": "StayEase home", children: [_jsx("span", { className: "brand-mark", children: "S" }), " StayEase"] }), _jsx(Link, { className: "change-search", to: "/", state: location.state, children: "\u2190 All hotels" })] }), _jsx("section", { className: "hotel-hero", style: {

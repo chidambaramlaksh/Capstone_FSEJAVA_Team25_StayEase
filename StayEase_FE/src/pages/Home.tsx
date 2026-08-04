@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useBookings } from "../context/BookingContext";
 
 type Hotel = {
   id: number;
@@ -12,8 +13,20 @@ type Hotel = {
 };
 
 type Search = { city: string; checkIn: string; checkOut: string };
+type LoginForm = { email: string; password: string };
+type LoginUser = { name: string; email: string; userType?: string };
+type LoginResponse = {
+  success: boolean;
+  message: string;
+  user?: LoginUser;
+  users?: LoginUser[];
+  token?: string;
+  allowedPassword?: string;
+};
 
 const emptySearch: Search = { city: "", checkIn: "", checkOut: "" };
+const searchStorageKey = "stayease-last-search";
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function formatDate(value: string) {
   if (!value) return "";
@@ -24,38 +37,164 @@ function formatDate(value: string) {
 
 export default function Home() {
   const location = useLocation();
+  const { getBookingsForUser } = useBookings();
   const savedSearch = (location.state as { activeSearch?: Search } | null)?.activeSearch ?? null;
   const [hotels, setHotels] = useState<Hotel[]>([]);
-  const [search, setSearch] = useState<Search>(() => savedSearch ?? emptySearch);
+  const [search, setSearch] = useState<Search>(() => {
+    if (savedSearch) {
+      return savedSearch;
+    }
+
+    if (typeof window === "undefined") {
+      return emptySearch;
+    }
+
+    const storedSearch = window.localStorage.getItem(searchStorageKey);
+    if (!storedSearch) {
+      return emptySearch;
+    }
+
+    try {
+      const parsedSearch = JSON.parse(storedSearch) as Search;
+      return parsedSearch && typeof parsedSearch === "object" ? parsedSearch : emptySearch;
+    } catch {
+      return emptySearch;
+    }
+  });
   const [activeSearch, setActiveSearch] = useState<Search | null>(() => savedSearch);
   const [isSearchOpen, setIsSearchOpen] = useState(() => !savedSearch);
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [loginForm, setLoginForm] = useState<LoginForm>({ email: "", password: "" });
+  const [loginError, setLoginError] = useState("");
+  const [loginSuccess, setLoginSuccess] = useState("");
+  const [loggedInUser, setLoggedInUser] = useState<string | null>(null);
+  const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
+  const [mockLogin, setMockLogin] = useState<LoginResponse | null>(null);
 
   useEffect(() => {
     fetch("/mockAPI.json")
       .then((response) => response.json())
-      .then((data: { hotels: Hotel[] }) => setHotels(data.hotels));
+      .then((data: { hotels: Hotel[]; login?: LoginResponse }) => {
+        setHotels(data.hotels);
+        setMockLogin(data.login ?? null);
+
+        const storedEmail = window.localStorage.getItem("stayease-user-email");
+        if (storedEmail && data.login?.user?.email?.toLowerCase() === storedEmail.toLowerCase()) {
+          setLoggedInEmail(storedEmail);
+          setLoggedInUser(data.login.user?.name ?? "Guest");
+        }
+      })
+      .catch(() => {
+        setLoginError("Unable to load mock data.");
+      });
   }, []);
 
   const isValid = Boolean(
     search.city && search.checkIn && search.checkOut && search.checkOut > search.checkIn,
   );
+  const isLoginValid = emailPattern.test(loginForm.email.trim()) && loginForm.password.trim().length >= 6;
   const displayedHotels = useMemo(
     () => activeSearch ? hotels.filter((hotel) => hotel.city === activeSearch.city) : [],
     [activeSearch, hotels],
   );
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(searchStorageKey, JSON.stringify(search));
+    }
+  }, [search]);
+
   const submitSearch = () => {
     if (!isValid) return;
     setActiveSearch(search);
     setIsSearchOpen(false);
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(searchStorageKey, JSON.stringify(search));
+    }
   };
+
+  const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginError("");
+    setLoginSuccess("");
+
+    if (!isLoginValid) {
+      setLoginError("Please use a valid email and a password with at least 6 characters.");
+      return;
+    }
+
+    if (!mockLogin) {
+      setLoginError("Mock login service is unavailable.");
+      return;
+    }
+
+    const requestedEmail = loginForm.email.trim().toLowerCase();
+    const requestedPassword = loginForm.password.trim();
+    const expectedPassword = mockLogin.allowedPassword ?? "123456";
+    const matchingUser = (mockLogin.users ?? [mockLogin.user]).find((user) => user?.email?.toLowerCase() === requestedEmail);
+
+    if (matchingUser && requestedPassword === expectedPassword) {
+      setLoggedInUser(matchingUser.name ?? "Guest");
+      setLoggedInEmail(requestedEmail);
+      window.localStorage.setItem("stayease-user-email", requestedEmail);
+      setLoginSuccess(`${mockLogin.message} (${matchingUser.userType ?? "User"})`);
+      setLoginForm({ email: "", password: "" });
+      setIsLoginOpen(false);
+      return;
+    }
+
+    setLoginError("Invalid credentials. Try ankita@gmail.com with password 123456.");
+  };
+
+  const openLogin = () => {
+    setLoginError("");
+    setLoginSuccess("");
+    setIsLoginOpen(true);
+  };
+
+  const closeLogin = () => {
+    setIsLoginOpen(false);
+    setLoginForm({ email: "", password: "" });
+    setLoginError("");
+    setLoginSuccess("");
+  };
+
+  const logout = () => {
+    setLoggedInUser(null);
+    setLoggedInEmail(null);
+    window.localStorage.removeItem("stayease-user-email");
+    setLoginSuccess("You have been logged out.");
+  };
+
+  const userBookingsCount = getBookingsForUser(loggedInEmail).length;
+  const loggedInUserType = (mockLogin?.users ?? [mockLogin?.user]).find((user) => user?.email?.toLowerCase() === loggedInEmail?.toLowerCase())?.userType?.toLowerCase();
+  const isAdminUser = loggedInUserType === "admin";
 
   return (
     <main>
       <header className="site-header">
-        <a className="brand" href="/" aria-label="StayEase home"><span className="brand-mark">S</span> StayEase</a>
-        {activeSearch && <button className="change-search" onClick={() => setIsSearchOpen(true)}>Change search</button>}
+        <div className="header-actions">
+          <a className="brand" href="/" aria-label="StayEase home"><span className="brand-mark">S</span> StayEase</a>
+        </div>
+        <div className="header-actions">
+          {activeSearch && <button className="change-search" onClick={() => setIsSearchOpen(true)}>Change search</button>}
+          {loggedInEmail ? <Link className="login-button" to="/bookings">View bookings{userBookingsCount ? ` (${userBookingsCount})` : ""}</Link> : null}
+          {loggedInUser ? (
+            <div className="auth-badge">
+              <span>Hi, {loggedInUser}</span>
+              <button type="button" onClick={logout}>Logout</button>
+            </div>
+          ) : (
+            <button className="login-button" type="button" onClick={openLogin}>Login</button>
+          )}
+        </div>
       </header>
+
+      {(loginError || loginSuccess) && (
+        <div className={`auth-status ${loginError ? "auth-status--error" : "auth-status--success"}`}>
+          {loginError || loginSuccess}
+        </div>
+      )}
 
       <section className="hero">
         <p className="eyebrow">FIND YOUR PERFECT STAY</p>
@@ -63,7 +202,33 @@ export default function Home() {
         <p>Thoughtfully selected stays in the cities you love.</p>
       </section>
 
-      {activeSearch ? (
+      {isAdminUser ? (
+        <section className="results" aria-live="polite">
+          <div className="results-heading">
+            <div><p className="eyebrow">ADMIN DASHBOARD</p><h2>Choose an action</h2></div>
+          </div>
+          <div className="hotel-grid">
+            <div className="hotel-card">
+              <article>
+                <div className="hotel-content">
+                  <p className="city-label">MANAGEMENT</p>
+                  <h3>Create hotel listing</h3>
+                  <p className="description">Add a new property and make it available for guests.</p>
+                </div>
+              </article>
+            </div>
+            <div className="hotel-card">
+              <article>
+                <div className="hotel-content">
+                  <p className="city-label">COMING SOON</p>
+                  <h3>More admin options</h3>
+                  <p className="description">Additional management actions will be added in future steps.</p>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+      ) : activeSearch ? (
         <section className="results" aria-live="polite">
           <div className="results-heading">
             <div><p className="eyebrow">AVAILABLE STAYS</p><h2>Hotels in {activeSearch.city}</h2></div>
@@ -91,7 +256,7 @@ export default function Home() {
         </section>
       ) : <section className="pre-search"><p>Your next memorable stay is just a search away.</p></section>}
 
-      {isSearchOpen && (
+      {isSearchOpen && !isAdminUser && (
         <div className="modal-backdrop" role="presentation">
           <section className="search-modal" role="dialog" aria-modal="true" aria-labelledby="search-title">
             <span className="modal-icon" aria-hidden="true">⌂</span>
@@ -109,6 +274,27 @@ export default function Home() {
             </div>
             {search.checkIn && search.checkOut && search.checkOut <= search.checkIn && <p className="validation">Check-out must be after check-in.</p>}
             <button className="search-button" disabled={!isValid} onClick={submitSearch}>Search hotels <span>→</span></button>
+          </section>
+        </div>
+      )}
+
+      {isLoginOpen && (
+        <div className="modal-backdrop" role="presentation" onClick={closeLogin}>
+          <section className="search-modal login-modal" role="dialog" aria-modal="true" aria-labelledby="login-title" onClick={(event) => event.stopPropagation()}>
+            <span className="modal-icon" aria-hidden="true">🔐</span>
+            <p className="eyebrow">ACCOUNT ACCESS</p>
+            <h2 id="login-title">Login to StayEase</h2>
+            <p className="modal-copy">Use your email and password to continue.</p>
+            <form className="form-grid" onSubmit={submitLogin}>
+              <label><span>Email</span>
+                <input type="email" value={loginForm.email} onChange={(event) => setLoginForm((current) => ({ ...current, email: event.target.value }))} placeholder="you@example.com" />
+              </label>
+              <label><span>Password</span>
+                <input type="password" value={loginForm.password} onChange={(event) => setLoginForm((current) => ({ ...current, password: event.target.value }))} placeholder="At least 6 characters" />
+              </label>
+              <p className="validation">Use ankita@gmail.com and password 123456 for this demo.</p>
+              <button className="search-button" type="submit" disabled={!isLoginValid}>Login</button>
+            </form>
           </section>
         </div>
       )}

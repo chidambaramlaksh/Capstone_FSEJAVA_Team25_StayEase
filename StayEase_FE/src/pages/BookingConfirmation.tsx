@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useBookings } from "../context/BookingContext";
 
 type BookingState = {
   bookingId: string;
@@ -8,8 +10,17 @@ type BookingState = {
 };
 
 function formatDate(value: string) {
+  if (!value) {
+    return "—";
+  }
+
+  const parsedDate = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return "—";
+  }
+
   return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" })
-    .format(new Date(`${value}T00:00:00`));
+    .format(parsedDate);
 }
 
 function getNights(checkIn: string, checkOut: string) {
@@ -20,7 +31,14 @@ function getNights(checkIn: string, checkOut: string) {
 
 export default function BookingConfirmation() {
   const location = useLocation();
-  const booking = location.state as BookingState | null;
+  const { addBooking } = useBookings();
+  const booking = location.state as (BookingState & { bookingEntry?: { bookingId: string; hotelName: string; hotelCity: string; hotelImage: string; roomCategory: string; roomPrice: number; maxOccupancy: number; checkIn: string; checkOut: string; totalPrice: number; bookedOn: string } }) | null;
+
+  useEffect(() => {
+    if (booking?.bookingEntry) {
+      addBooking(booking.bookingEntry);
+    }
+  }, [addBooking, booking]);
 
   if (!booking) {
     return <main className="page-message"><h1>No booking selected</h1><Link to="/">Find a stay</Link></main>;

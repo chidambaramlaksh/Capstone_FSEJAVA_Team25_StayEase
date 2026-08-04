@@ -5,10 +5,19 @@
 body { margin: 0; min-width: 320px; background: #f8f7f2; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
-.site-header { height: 76px; padding: 0 7vw; display: flex; justify-content: space-between; align-items: center; background: #fffdfa; }
-.brand { color: #183e38; text-decoration: none; font-family: "Playfair Display", serif; font-weight: 700; font-size: 23px; display: flex; align-items: center; gap: 9px; }
+.site-header { height: 76px; padding: 0 7vw; display: flex; justify-content: space-between; align-items: center; gap: 16px; background: #fffdfa; }
+.site-header > .header-actions:first-child { margin-left: 0; margin-right: auto; }
+.brand { color: #183e38; text-decoration: none; font-family: "Playfair Display", serif; font-weight: 700; font-size: 23px; display: flex; align-items: center; gap: 9px; margin-left: 0; }
 .brand-mark { font-family: "DM Sans", sans-serif; color: white; background: #d46f51; border-radius: 50% 50% 45% 45%; font-size: 16px; width: 28px; height: 28px; display: grid; place-items: center; }
+.header-actions { display: flex; align-items: center; gap: 12px; }
 .change-search { border: 1px solid #d5dedb; background: white; color: #1d4a42; border-radius: 7px; padding: 10px 15px; font-size: 14px; font-weight: 600; }
+.login-button { border: 0; background: #1c5047; color: white; border-radius: 7px; padding: 10px 15px; font-size: 14px; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+.login-button:hover { background: #163f38; }
+.auth-badge { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 999px; background: #f4efe8; color: #26453e; font-weight: 600; }
+.auth-badge button { border: 0; background: transparent; color: #b44c32; font-weight: 700; padding: 0; }
+.auth-status { margin: 0 7vw; padding: 12px 16px; border-radius: 8px; font-size: 14px; font-weight: 600; }
+.auth-status--error { background: #fff1ef; color: #b54a38; }
+.auth-status--success { background: #eaf7f0; color: #24715c; }
 .hero { padding: 72px 7vw 94px; color: white; background: linear-gradient(100deg, rgba(17, 55, 48, .96), rgba(25, 76, 66, .83)), url('https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=1800&q=85') center/cover; }
 .eyebrow { color: #c87c63; font-size: 11px; font-weight: 700; letter-spacing: .16em; margin: 0 0 12px; }
 .hero .eyebrow { color: #efb19b; }
@@ -95,4 +104,4 @@ input, select { width: 100%; min-height: 48px; padding: 0 13px; border: 1px soli
 .search-button { width: 100%; margin-top: 25px; padding: 15px 19px; border: 0; border-radius: 6px; color: white; background: #1c5047; display: flex; justify-content: center; gap: 12px; font-weight: 700; }
 .search-button span { font-size: 18px; line-height: 15px; }
 .search-button:disabled { cursor: not-allowed; background: #bbc6c2; color: #eef0ef; }
-@media (max-width: 760px) { .site-header { padding: 0 24px; } .hero { padding: 60px 24px 82px; } .results { padding: 34px 24px 0; } .results-heading { align-items: flex-start; gap: 16px; flex-direction: column; } .hotel-grid { grid-template-columns: 1fr; } .search-modal { padding: 30px 24px; } .search-modal h2 { font-size: 29px; } .hotel-hero { min-height: 365px; padding: 44px 24px; } .hotel-hero h1 { font-size: 43px; } .rooms-heading { align-items: flex-start; flex-direction: column; } .room-card { grid-template-columns: 48px 1fr; gap: 14px; padding: 17px; } .room-icon { width: 46px; height: 46px; font-size: 22px; } .room-price { grid-column: 2; justify-items: start; } .confirmation-wrap { width: min(100% - 32px, 760px); padding-top: 40px; } .booking-card-content { padding: 20px; } .booking-details { gap: 17px 12px; } .confirmation-status h1 { font-size: 32px; } }
+@media (max-width: 760px) { .site-header { padding: 0 24px; } .header-actions { gap: 8px; } .auth-badge { padding: 8px; font-size: 13px; } .hero { padding: 60px 24px 82px; } .results { padding: 34px 24px 0; } .results-heading { align-items: flex-start; gap: 16px; flex-direction: column; } .hotel-grid { grid-template-columns: 1fr; } .search-modal { padding: 30px 24px; } .search-modal h2 { font-size: 29px; } .hotel-hero { min-height: 365px; padding: 44px 24px; } .hotel-hero h1 { font-size: 43px; } .rooms-heading { align-items: flex-start; flex-direction: column; } .room-card { grid-template-columns: 48px 1fr; gap: 14px; padding: 17px; } .room-icon { width: 46px; height: 46px; font-size: 22px; } .room-price { grid-column: 2; justify-items: start; } .confirmation-wrap { width: min(100% - 32px, 760px); padding-top: 40px; } .booking-card-content { padding: 20px; } .booking-details { gap: 17px 12px; } .confirmation-status h1 { font-size: 32px; } }

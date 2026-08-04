@@ -192,5 +192,23 @@
         }
       ]
     }
-  ]
+  ],
+  "login": {
+    "success": true,
+    "message": "Login successful",
+    "users": [
+      {
+        "name": "Ankita",
+        "email": "ankita@gmail.com",
+        "userType": "user"
+      },
+      {
+        "name": "Ankita Admin",
+        "email": "ankita_admin@gmail.com",
+        "userType": "admin"
+      }
+    ],
+    "token": "mock-token-789",
+    "allowedPassword": "123456"
+  }
 }
