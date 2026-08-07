@@ -1,6 +1,7 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { authTokenStorageKey, loginUser } from "../services/authApi";
 export default function AdminLogin() {
     const navigate = useNavigate();
     const [email, setEmail] = useState("");
@@ -19,21 +20,24 @@ export default function AdminLogin() {
         setError("");
         setIsSubmitting(true);
         try {
-            const response = await fetch("/mockAPI.json");
-            const data = await response.json();
-            const users = data.login?.users ?? [];
-            const expectedPassword = data.login?.allowedPassword ?? "123456";
-            const matchingUser = users.find((user) => user.email.toLowerCase() === email.trim().toLowerCase());
-            if (matchingUser && matchingUser.userType?.toLowerCase() === "admin" && password.trim() === expectedPassword) {
-                window.localStorage.setItem("stayease-user-email", matchingUser.email);
+            const authenticatedUser = await loginUser(email.trim(), password.trim());
+            const role = authenticatedUser.role.toLowerCase();
+            if (role === "admin" || !authenticatedUser.role) {
+                window.localStorage.setItem("stayease-user-email", authenticatedUser.email);
+                window.localStorage.setItem("stayease-user-name", authenticatedUser.name);
                 window.localStorage.setItem("stayease-user-type", "admin");
+                if (authenticatedUser.token) {
+                    window.localStorage.setItem(authTokenStorageKey, authenticatedUser.token);
+                }
                 navigate("/admin/home", { replace: true });
                 return;
             }
-            setError("Invalid admin credentials. Use ankita_admin@gmail.com with password 123456.");
+            setError("This account does not have admin access.");
         }
-        catch {
-            setError("Unable to load admin credentials.");
+        catch (error) {
+            setError(error instanceof Error
+                ? error.message
+                : "Unable to login. Please check your credentials.");
         }
         finally {
             setIsSubmitting(false);

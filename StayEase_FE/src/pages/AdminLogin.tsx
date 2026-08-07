@@ -1,13 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-
-type LoginUser = { name: string; email: string; userType?: string };
-type LoginResponse = {
-  success: boolean;
-  message: string;
-  users?: LoginUser[];
-  allowedPassword?: string;
-};
+import { authTokenStorageKey, loginUser } from "../services/authApi";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -30,30 +23,27 @@ export default function AdminLogin() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/mockAPI.json");
-      const data: { login?: LoginResponse } = await response.json();
-      const users = data.login?.users ?? [];
-      const expectedPassword = data.login?.allowedPassword ?? "123456";
-      const matchingUser = users.find(
-        (user) => user.email.toLowerCase() === email.trim().toLowerCase(),
-      );
+      const authenticatedUser = await loginUser(email.trim(), password.trim());
+      const role = authenticatedUser.role.toLowerCase();
 
-      if (
-        matchingUser &&
-        matchingUser.userType?.toLowerCase() === "admin" &&
-        password.trim() === expectedPassword
-      ) {
-        window.localStorage.setItem("stayease-user-email", matchingUser.email);
+      if (role === "admin" || !authenticatedUser.role) {
+        window.localStorage.setItem("stayease-user-email", authenticatedUser.email);
+        window.localStorage.setItem("stayease-user-name", authenticatedUser.name);
         window.localStorage.setItem("stayease-user-type", "admin");
+        if (authenticatedUser.token) {
+          window.localStorage.setItem(authTokenStorageKey, authenticatedUser.token);
+        }
         navigate("/admin/home", { replace: true });
         return;
       }
 
+      setError("This account does not have admin access.");
+    } catch (error) {
       setError(
-        "Invalid admin credentials. Use ankita_admin@gmail.com with password 123456.",
+        error instanceof Error
+          ? error.message
+          : "Unable to login. Please check your credentials.",
       );
-    } catch {
-      setError("Unable to load admin credentials.");
     } finally {
       setIsSubmitting(false);
     }

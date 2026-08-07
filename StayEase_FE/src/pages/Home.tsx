@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useBookings } from "../context/BookingContext";
 import { useAuth } from "../context/AuthContext";
+import { authTokenStorageKey, loginUser } from "../services/authApi";
 
 type Hotel = {
   id: number;
@@ -15,15 +16,6 @@ type Hotel = {
 
 type Search = { city: string; checkIn: string; checkOut: string };
 type LoginForm = { email: string; password: string };
-type LoginUser = { name: string; email: string; userType?: string };
-type LoginResponse = {
-  success: boolean;
-  message: string;
-  user?: LoginUser;
-  users?: LoginUser[];
-  token?: string;
-  allowedPassword?: string;
-};
 
 const emptySearch: Search = { city: "", checkIn: "", checkOut: "" };
 const searchStorageKey = "stayease-last-search";
@@ -82,26 +74,22 @@ export default function Home() {
   const [loginSuccess, setLoginSuccess] = useState("");
   const [loggedInUser, setLoggedInUser] = useState<string | null>(null);
   const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
-  const [mockLogin, setMockLogin] = useState<LoginResponse | null>(null);
 
   useEffect(() => {
     fetch("/mockAPI.json")
       .then((response) => response.json())
-      .then((data: { hotels: Hotel[]; login?: LoginResponse }) => {
+      .then((data: { hotels: Hotel[] }) => {
         setHotels(data.hotels);
-        setMockLogin(data.login ?? null);
 
         const storedEmail = window.localStorage.getItem("stayease-user-email");
-        const storedUser = (data.login?.users ?? [data.login?.user]).find(
-          (user) => user?.email?.toLowerCase() === storedEmail?.toLowerCase(),
-        );
-        if (storedEmail && storedUser) {
+        const storedName = window.localStorage.getItem("stayease-user-name");
+        if (storedEmail) {
           setLoggedInEmail(storedEmail);
-          setLoggedInUser(storedUser.name ?? "Guest");
+          setLoggedInUser(storedName ?? storedEmail.split("@")[0]);
         }
       })
       .catch(() => {
-        setLoginError("Unable to load mock data.");
+        setLoginError("Unable to load hotel data.");
       });
   }, []);
 
@@ -149,20 +137,17 @@ export default function Home() {
       return;
     }
 
-    if (!mockLogin) {
-      setLoginError("Mock login service is unavailable.");
-      return;
-    }
-
     const requestedEmail = loginForm.email.trim().toLowerCase();
     const requestedPassword = loginForm.password.trim();
-    const expectedPassword = mockLogin.allowedPassword ?? "123456";
-    const matchingUser = (mockLogin.users ?? [mockLogin.user]).find(
-      (user) => user?.email?.toLowerCase() === requestedEmail,
-    );
 
-    if (matchingUser && requestedPassword === expectedPassword) {
-      const role = matchingUser.userType?.toLowerCase();
+    try {
+      const authenticatedUser = await loginUser(requestedEmail, requestedPassword);
+      const role = authenticatedUser.role.toLowerCase();
+
+      if (authenticatedUser.token) {
+        window.localStorage.setItem(authTokenStorageKey, authenticatedUser.token);
+      }
+
       if (role === "manager") {
         const isManager = await startManagerSession(
           requestedEmail,
@@ -173,7 +158,8 @@ export default function Home() {
           return;
         }
 
-        window.localStorage.setItem("stayease-user-email", requestedEmail);
+        window.localStorage.setItem("stayease-user-email", authenticatedUser.email);
+        window.localStorage.setItem("stayease-user-name", authenticatedUser.name);
         window.localStorage.setItem("stayease-user-type", "manager");
         setLoginForm({ email: "", password: "" });
         setIsLoginOpen(false);
@@ -181,21 +167,22 @@ export default function Home() {
         return;
       }
 
-      setLoggedInUser(matchingUser.name ?? "Guest");
-      setLoggedInEmail(requestedEmail);
-      window.localStorage.setItem("stayease-user-email", requestedEmail);
+      setLoggedInUser(authenticatedUser.name);
+      setLoggedInEmail(authenticatedUser.email);
+      window.localStorage.setItem("stayease-user-email", authenticatedUser.email);
+      window.localStorage.setItem("stayease-user-name", authenticatedUser.name);
       window.localStorage.setItem("stayease-user-type", role ?? "user");
-      setLoginSuccess(
-        `${mockLogin.message} (${matchingUser.userType ?? "User"})`,
-      );
+      setLoginSuccess(`Login successful (${role || "user"})`);
       setLoginForm({ email: "", password: "" });
       setIsLoginOpen(false);
       return;
+    } catch (error) {
+      setLoginError(
+        error instanceof Error
+          ? error.message
+          : "Unable to login. Please check your credentials.",
+      );
     }
-
-    setLoginError(
-      "Invalid credentials. Use a demo email with password 123456.",
-    );
   };
 
   const openLogin = () => {
@@ -215,15 +202,17 @@ export default function Home() {
     setLoggedInUser(null);
     setLoggedInEmail(null);
     window.localStorage.removeItem("stayease-user-email");
+    window.localStorage.removeItem("stayease-user-name");
     window.localStorage.removeItem("stayease-user-type");
+    window.localStorage.removeItem(authTokenStorageKey);
     endManagerSession();
     setLoginSuccess("You have been logged out.");
   };
 
   const userBookingsCount = getBookingsForUser(loggedInEmail).length;
-  const loggedInUserType = (mockLogin?.users ?? [mockLogin?.user])
-    .find((user) => user?.email?.toLowerCase() === loggedInEmail?.toLowerCase())
-    ?.userType?.toLowerCase();
+  const loggedInUserType = window.localStorage
+    .getItem("stayease-user-type")
+    ?.toLowerCase();
   const isAdminUser = loggedInUserType === "admin";
 
   return (
