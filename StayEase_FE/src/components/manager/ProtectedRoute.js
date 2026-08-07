@@ -4,7 +4,8 @@ import { useAuth } from "../../context/AuthContext";
 export default function ProtectedRoute({ allowedRoles, }) {
     const { user } = useAuth();
     const location = useLocation();
-    if (!user || !allowedRoles.includes(user.role)) {
+    const role = (user?.role ?? user?.userType)?.toUpperCase();
+    if (!user || !role || !allowedRoles.includes(role)) {
         return _jsx(Navigate, { to: "/", replace: true, state: { from: location.pathname } });
     }
     return _jsx(Outlet, {});

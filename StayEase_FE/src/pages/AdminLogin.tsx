@@ -1,21 +1,21 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { authTokenStorageKey, loginUser } from "../services/authApi";
+import { useAuth } from "../context/AuthContext";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const { user, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const storedEmail = window.localStorage.getItem("stayease-user-email");
-    const storedType = window.localStorage.getItem("stayease-user-type");
-    if (storedEmail && storedType === "admin") {
+    const role = user?.role ?? user?.userType;
+    if (user && role?.toLowerCase() === "admin") {
       navigate("/admin/home", { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, user]);
 
   const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -23,27 +23,16 @@ export default function AdminLogin() {
     setIsSubmitting(true);
 
     try {
-      const authenticatedUser = await loginUser(email.trim(), password.trim());
-      const role = authenticatedUser.role.toLowerCase();
-
-      if (role === "admin" || !authenticatedUser.role) {
-        window.localStorage.setItem("stayease-user-email", authenticatedUser.email);
-        window.localStorage.setItem("stayease-user-name", authenticatedUser.name);
-        window.localStorage.setItem("stayease-user-type", "admin");
-        if (authenticatedUser.token) {
-          window.localStorage.setItem(authTokenStorageKey, authenticatedUser.token);
-        }
+      const authenticatedUser = await login(email, password);
+      const role = authenticatedUser?.role ?? authenticatedUser?.userType;
+      if (authenticatedUser && role?.toLowerCase() === "admin") {
         navigate("/admin/home", { replace: true });
         return;
       }
 
       setError("This account does not have admin access.");
-    } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Unable to login. Please check your credentials.",
-      );
+    } catch {
+      setError("Unable to sign in. Please check your credentials.");
     } finally {
       setIsSubmitting(false);
     }

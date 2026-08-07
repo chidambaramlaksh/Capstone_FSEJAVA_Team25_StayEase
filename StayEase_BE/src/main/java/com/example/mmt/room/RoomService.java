@@ -1,6 +1,5 @@
 package com.example.mmt.room;
 
-import com.example.mmt.booking.BookingStatus;
 import com.example.mmt.common.BadRequestException;
 import com.example.mmt.common.ResourceNotFoundException;
 import com.example.mmt.hotel.Hotel;
@@ -33,7 +32,7 @@ public class RoomService {
     public List<RoomResponse> findAvailable(Long hotelId, LocalDate checkIn, LocalDate checkOut) {
         validateDates(checkIn, checkOut);
         requireHotel(hotelId);
-        return rooms.findAvailable(hotelId, checkIn, checkOut, BookingStatus.CANCELLED)
+        return rooms.findAvailable(hotelId)
                 .stream().map(RoomResponse::from).toList();
     }
 
@@ -41,7 +40,9 @@ public class RoomService {
     public RoomResponse create(Long hotelId, RoomRequest request, AppUser manager) {
         assertManagerOwnsHotel(manager, hotelId);
         Hotel hotel = requireHotel(hotelId);
-        Room room = new Room(hotel, request.roomNumber(), request.type(), request.pricePerNight());
+        int available = request.available() == null ? 1 : request.available();
+        Room room = new Room(hotel, request.roomNumber(), request.type(), null,
+                request.pricePerNight(), available, 3);
         return RoomResponse.from(rooms.save(room));
     }
 
@@ -50,7 +51,7 @@ public class RoomService {
         Room room = getEntity(roomId);
         assertManagerOwnsHotel(manager, room.getHotel().getId());
         room.update(request.roomNumber(), request.type(), request.pricePerNight(),
-                request.active() == null || request.active());
+                request.active() == null || request.active(), request.available());
         return RoomResponse.from(room);
     }
 

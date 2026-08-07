@@ -23,7 +23,7 @@ export default function RoomManagement() {
   );
   const saveRoom = (values: RoomInput) => {
     if (editing) updateRoom(editing.id, values);
-    else if (user) addRoom(user.hotelId, values);
+    else if (user?.hotelId !== undefined) addRoom(user.hotelId, values);
     setEditing(undefined);
   };
   return (

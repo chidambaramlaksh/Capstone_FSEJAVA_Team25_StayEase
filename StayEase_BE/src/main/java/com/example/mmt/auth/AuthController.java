@@ -23,4 +23,10 @@ public class AuthController {
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {
         return auth.login(request);
     }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout() {
+        // JWT authentication is stateless; the client clears its saved token and user details.
+    }
 }

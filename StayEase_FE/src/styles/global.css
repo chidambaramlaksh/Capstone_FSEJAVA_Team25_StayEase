@@ -91,6 +91,11 @@ h3 { font-size: 21px; margin-bottom: 12px; }
 .booking-total div { display: grid; gap: 4px; }
 .booking-total div strong { color: #26453e; font-size: 15px; }
 .booking-total > strong { color: #174d43; font-size: 25px; }
+.booking-actions { display: flex; justify-content: flex-end; padding-top: 18px; }
+.booking-cancel-button { border: 1px solid #d9a69a; border-radius: 7px; padding: 10px 14px; color: #a84432; background: #fff7f4; font-size: 13px; font-weight: 700; }
+.booking-cancel-button:hover { background: #fcedea; }
+.booking-cancel-button:disabled { cursor: not-allowed; opacity: .65; }
+.booking-cancelled { color: #778681; font-size: 13px; font-weight: 700; }
 .return-home { display: block; width: max-content; margin: 27px auto 0; color: #1e5046; font-size: 14px; font-weight: 700; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 2; display: grid; place-items: center; padding: 20px; background: rgba(11, 30, 27, .58); backdrop-filter: blur(4px); }
 .search-modal { width: min(560px, 100%); padding: 40px; border-radius: 13px; background: #fffdfa; box-shadow: 0 24px 70px rgba(7, 24, 21, .34); }

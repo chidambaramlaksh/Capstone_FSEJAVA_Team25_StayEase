@@ -66,7 +66,7 @@ Normal users can register, book, view their bookings, and cancel their own booki
 
 - `POST /api/bookings` with `{ "roomId": 1, "checkInDate": "2026-08-10", "checkOutDate": "2026-08-12" }`
 - `GET /api/bookings/me`
-- `POST /api/bookings/{bookingId}/cancel`
+- `PUT /api/bookings/{bookingId}/cancel`
 
 Hotel managers can manage rooms only for the hotel assigned to their user record and can view its upcoming bookings:
 

@@ -1,18 +1,8 @@
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useBookings } from "../context/BookingContext";
 import { useAuth } from "../context/AuthContext";
-import { authTokenStorageKey, loginUser } from "../services/authApi";
-
-type Hotel = {
-  id: number;
-  name: string;
-  description: string;
-  city: "Mumbai" | "Pune";
-  image: string;
-  rating: number;
-  price: number;
-};
+import { useHotels } from "../context/HotelContext";
+import { getHotelsByCity } from "../services/hotelApi";
 
 type Search = { city: string; checkIn: string; checkOut: string };
 type LoginForm = { email: string; password: string };
@@ -33,11 +23,10 @@ function formatDate(value: string) {
 export default function Home() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { getBookingsForUser } = useBookings();
-  const { login: startManagerSession, logout: endManagerSession } = useAuth();
+  const { user, login, logout: endSession } = useAuth();
   const savedSearch =
     (location.state as { activeSearch?: Search } | null)?.activeSearch ?? null;
-  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const { hotels, setHotels } = useHotels();
   const [search, setSearch] = useState<Search>(() => {
     if (savedSearch) {
       return savedSearch;
@@ -72,26 +61,37 @@ export default function Home() {
   });
   const [loginError, setLoginError] = useState("");
   const [loginSuccess, setLoginSuccess] = useState("");
-  const [loggedInUser, setLoggedInUser] = useState<string | null>(null);
-  const [loggedInEmail, setLoggedInEmail] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingHotels, setIsLoadingHotels] = useState(false);
+  const [hotelError, setHotelError] = useState("");
 
   useEffect(() => {
-    fetch("/mockAPI.json")
-      .then((response) => response.json())
-      .then((data: { hotels: Hotel[] }) => {
-        setHotels(data.hotels);
+    if (!activeSearch?.city) {
+      return;
+    }
 
-        const storedEmail = window.localStorage.getItem("stayease-user-email");
-        const storedName = window.localStorage.getItem("stayease-user-name");
-        if (storedEmail) {
-          setLoggedInEmail(storedEmail);
-          setLoggedInUser(storedName ?? storedEmail.split("@")[0]);
-        }
+    let isCurrentRequest = true;
+    setIsLoadingHotels(true);
+    setHotelError("");
+
+    getHotelsByCity(activeSearch.city)
+      .then((hotelsForCity) => {
+        if (isCurrentRequest) setHotels(hotelsForCity);
       })
       .catch(() => {
-        setLoginError("Unable to load hotel data.");
+        if (isCurrentRequest) {
+          setHotels([]);
+          setHotelError("Unable to load hotels for this city.");
+        }
+      })
+      .finally(() => {
+        if (isCurrentRequest) setIsLoadingHotels(false);
       });
-  }, []);
+
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [activeSearch?.city, setHotels]);
 
   const isValid = Boolean(
     search.city &&
@@ -105,7 +105,10 @@ export default function Home() {
   const displayedHotels = useMemo(
     () =>
       activeSearch
-        ? hotels.filter((hotel) => hotel.city === activeSearch.city)
+        ? hotels.filter(
+            (hotel) =>
+              hotel.city.toLowerCase() === activeSearch.city.toLowerCase(),
+          )
         : [],
     [activeSearch, hotels],
   );
@@ -137,51 +140,25 @@ export default function Home() {
       return;
     }
 
-    const requestedEmail = loginForm.email.trim().toLowerCase();
-    const requestedPassword = loginForm.password.trim();
-
+    setIsSubmitting(true);
     try {
-      const authenticatedUser = await loginUser(requestedEmail, requestedPassword);
-      const role = authenticatedUser.role.toLowerCase();
-
-      if (authenticatedUser.token) {
-        window.localStorage.setItem(authTokenStorageKey, authenticatedUser.token);
-      }
-
-      if (role === "manager") {
-        const isManager = await startManagerSession(
-          requestedEmail,
-          requestedPassword,
-        );
-        if (!isManager) {
-          setLoginError("Unable to start the manager session.");
-          return;
-        }
-
-        window.localStorage.setItem("stayease-user-email", authenticatedUser.email);
-        window.localStorage.setItem("stayease-user-name", authenticatedUser.name);
-        window.localStorage.setItem("stayease-user-type", "manager");
-        setLoginForm({ email: "", password: "" });
-        setIsLoginOpen(false);
-        navigate("/manager");
+      const authenticatedUser = await login(loginForm.email, loginForm.password);
+      if (!authenticatedUser) {
+        setLoginError("Invalid email or password.");
         return;
       }
 
-      setLoggedInUser(authenticatedUser.name);
-      setLoggedInEmail(authenticatedUser.email);
-      window.localStorage.setItem("stayease-user-email", authenticatedUser.email);
-      window.localStorage.setItem("stayease-user-name", authenticatedUser.name);
-      window.localStorage.setItem("stayease-user-type", role ?? "user");
-      setLoginSuccess(`Login successful (${role || "user"})`);
+      const role = String(
+        authenticatedUser.role ?? authenticatedUser.userType ?? "user",
+      ).toLowerCase();
+      setLoginSuccess(`Login successful (${role})`);
       setLoginForm({ email: "", password: "" });
       setIsLoginOpen(false);
-      return;
-    } catch (error) {
-      setLoginError(
-        error instanceof Error
-          ? error.message
-          : "Unable to login. Please check your credentials.",
-      );
+      if (role === "manager") navigate("/manager");
+    } catch {
+      setLoginError("Unable to sign in. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -199,20 +176,14 @@ export default function Home() {
   };
 
   const logout = () => {
-    setLoggedInUser(null);
-    setLoggedInEmail(null);
-    window.localStorage.removeItem("stayease-user-email");
-    window.localStorage.removeItem("stayease-user-name");
-    window.localStorage.removeItem("stayease-user-type");
-    window.localStorage.removeItem(authTokenStorageKey);
-    endManagerSession();
+    endSession();
     setLoginSuccess("You have been logged out.");
   };
 
-  const userBookingsCount = getBookingsForUser(loggedInEmail).length;
-  const loggedInUserType = window.localStorage
-    .getItem("stayease-user-type")
-    ?.toLowerCase();
+  const loggedInEmail = user?.email ?? null;
+  const loggedInUserType = String(
+    user?.role ?? user?.userType ?? "user",
+  ).toLowerCase();
   const isAdminUser = loggedInUserType === "admin";
 
   return (
@@ -234,12 +205,12 @@ export default function Home() {
           )}
           {loggedInEmail ? (
             <Link className="login-button" to="/bookings">
-              View bookings{userBookingsCount ? ` (${userBookingsCount})` : ""}
+              View bookings
             </Link>
           ) : null}
-          {loggedInUser ? (
+          {user ? (
             <div className="auth-badge">
-              <span>Hi, {loggedInUser}</span>
+              <span>Hi, {user.name}</span>
               <button type="button" onClick={logout}>
                 Logout
               </button>
@@ -316,7 +287,11 @@ export default function Home() {
               <span>{formatDate(activeSearch.checkOut)}</span>
             </div>
           </div>
-          {displayedHotels.length ? (
+          {isLoadingHotels ? (
+            <p className="empty-state">Loading hotels…</p>
+          ) : hotelError ? (
+            <p className="empty-state">{hotelError}</p>
+          ) : displayedHotels.length ? (
             <div className="hotel-grid">
               {displayedHotels.map((hotel) => (
                 <Link
@@ -482,9 +457,9 @@ export default function Home() {
               <button
                 className="search-button"
                 type="submit"
-                disabled={!isLoginValid}
+                disabled={!isLoginValid || isSubmitting}
               >
-                Login
+                {isSubmitting ? "Signing in…" : "Login"}
               </button>
             </form>
           </section>

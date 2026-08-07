@@ -14,7 +14,7 @@ export default function UpcomingBookings() {
     const [status, setStatus] = useState("all");
     const [loading, setLoading] = useState(true);
     useEffect(() => {
-        if (!user)
+        if (!user || user.hotelId === undefined)
             return;
         getUpcomingBookings(user.hotelId)
             .then(setBookings)

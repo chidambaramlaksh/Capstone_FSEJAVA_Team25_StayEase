@@ -1,26 +1,7 @@
-import { loginUser } from "./authApi";
-import type { ManagerBooking, ManagerUser } from "../types/manager";
+import type { ManagerBooking } from "../types/manager";
 
 const delay = (milliseconds = 250) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds));
-
-export async function loginManager(
-  email: string,
-  password: string,
-): Promise<ManagerUser | null> {
-  const user = await loginUser(email, password);
-
-  if (user.role !== "manager") {
-    return null;
-  }
-
-  return {
-    name: user.name,
-    email: user.email,
-    role: "MANAGER",
-    hotelId: user.hotelId ?? 1,
-  };
-}
 
 export async function getUpcomingBookings(
   hotelId: number,

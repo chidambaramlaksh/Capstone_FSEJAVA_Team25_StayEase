@@ -5,15 +5,18 @@ import App from "./App";
 import { BookingProvider } from "./context/BookingContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ManagerProvider } from "./context/ManagerContext";
+import { HotelProvider } from "./context/HotelContext";
 import "./styles/global.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>
       <ManagerProvider>
-        <BookingProvider>
-          <App />
-        </BookingProvider>
+        <HotelProvider>
+          <BookingProvider>
+            <App />
+          </BookingProvider>
+        </HotelProvider>
       </ManagerProvider>
     </AuthProvider>
   </BrowserRouter>,

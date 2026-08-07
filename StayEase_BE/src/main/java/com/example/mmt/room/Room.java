@@ -38,6 +38,10 @@ public class Room {
     @Column(nullable = false)
     private int available = 1;
 
+    @Version
+    @Column(nullable = false)
+    private long version;
+
     @Column(nullable = false)
     private int maxOccupancy = 3;
 
@@ -73,10 +77,29 @@ public class Room {
     public List<Booking> getBookings() { return bookings; }
     public boolean isActive() { return active; }
 
-    public void update(String roomNumber, RoomType type, BigDecimal pricePerNight, boolean active) {
+    public void update(String roomNumber, RoomType type, BigDecimal pricePerNight, boolean active,
+                       Integer available) {
         this.roomNumber = roomNumber;
         this.type = type;
         this.pricePerNight = pricePerNight;
         this.active = active;
+        if (available != null) {
+            this.available = available;
+        }
+    }
+
+    public boolean hasAvailability() {
+        return active && available > 0;
+    }
+
+    public void decrementAvailable() {
+        if (available <= 0) {
+            throw new IllegalStateException("No rooms are available");
+        }
+        available--;
+    }
+
+    public void incrementAvailable() {
+        available++;
     }
 }

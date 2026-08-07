@@ -1,75 +1,38 @@
 import axios from "axios";
+import type { AuthUser } from "../types/auth";
 
-export type AuthenticatedUser = {
-  name: string;
+type LoginPayload = {
   email: string;
-  role: string;
-  hotelId?: number;
-  token?: string;
+  password: string;
 };
 
-type UnknownRecord = Record<string, unknown>;
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") ??
-  "http://localhost:8080";
-
-export const authTokenStorageKey = "stayease-auth-token";
-
-const isRecord = (value: unknown): value is UnknownRecord =>
-  typeof value === "object" && value !== null;
-
-const stringValue = (...values: unknown[]) =>
-  values.find((value): value is string => typeof value === "string" && value.length > 0);
-
-const numberValue = (...values: unknown[]) =>
-  values.find((value): value is number => typeof value === "number" && Number.isFinite(value));
+const loginApiUrl =
+  import.meta.env.VITE_LOGIN_API_URL ?? "/api/auth/login";
+const logoutApiUrl =
+  import.meta.env.VITE_LOGOUT_API_URL ?? "/api/auth/logout";
 
 export async function loginUser(
   email: string,
   password: string,
-): Promise<AuthenticatedUser> {
-  try {
-    const response = await axios.post<unknown>(`${API_BASE_URL}/api/auth/login`, {
-      email,
-      password,
-    });
+): Promise<AuthUser | null> {
+  const { data } = await axios.post<AuthUser>(loginApiUrl, {
+    email: email.trim(),
+    password,
+  } satisfies LoginPayload);
 
-    const root = isRecord(response.data) ? response.data : {};
-    const payload = isRecord(root.data) ? root.data : root;
-    const user = isRecord(payload.user) ? payload.user : payload;
-
-    if (payload.success === false) {
-      throw new Error(stringValue(payload.message, root.message) ?? "Invalid credentials.");
-    }
-
-    const userEmail = stringValue(user.email, payload.email, email.trim()) ?? email.trim();
-    const role = stringValue(
-      user.userType,
-      user.role,
-      payload.userType,
-      payload.role,
-      payload.type,
-    );
-
-    return {
-      name:
-        stringValue(user.name, user.fullName, user.username, payload.name) ??
-        userEmail.split("@")[0],
-      email: userEmail,
-      role: role?.toLowerCase() ?? "",
-      hotelId: numberValue(user.hotelId, payload.hotelId),
-      token: stringValue(payload.token, payload.accessToken, payload.jwt, root.token),
-    };
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const data = error.response?.data;
-      const message = isRecord(data)
-        ? stringValue(data.message, data.error)
-        : undefined;
-      throw new Error(message ?? "Unable to login. Please check your credentials.");
-    }
-
-    throw error;
+  if (!data?.token || !data?.email || !data?.name || data?.userId === undefined) {
+    throw new Error("The login response is missing required user details.");
   }
+
+  return data;
+}
+
+export async function logoutUser(token?: string): Promise<void> {
+  await axios.post(logoutApiUrl, undefined, token
+    ? {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    : undefined);
 }

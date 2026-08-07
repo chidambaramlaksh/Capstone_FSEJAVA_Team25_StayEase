@@ -32,7 +32,7 @@ public class BookingController {
         return bookings.findMine(user);
     }
 
-    @PostMapping("/bookings/{bookingId}/cancel")
+    @PutMapping("/bookings/{bookingId}/cancel")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('USER')")
     public void cancel(@PathVariable Long bookingId, @AuthenticationPrincipal AppUser user) {
