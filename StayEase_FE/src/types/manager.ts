@@ -34,14 +34,14 @@ export type RoomInput = {
 };
 
 export type ManagerBooking = {
-  id: string;
+  id: number;
+  bookingRef: string;
   hotelId: number;
   guestName: string;
   guestEmail: string;
   roomNumber: string;
   roomType: string;
-  checkIn: string;
-  checkOut: string;
-  guests: number;
-  status: "Confirmed" | "Pending";
+  checkInDate: string;
+  checkOutDate: string;
+  status: "BOOKED";
 };

@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Room, RoomInput } from "../types/manager";
+import type { ManagerBooking, Room, RoomInput } from "../types/manager";
 
 const baseUrl = import.meta.env.VITE_API_URL ?? "/api";
 
@@ -35,7 +35,19 @@ export async function toggleRoomStatus(roomId: number, token?: string): Promise<
   return data;
 }
 
-export async function getUpcomingBookings(hotelId: number): Promise<any[]> {
-  const { data } = await axios.get(`${baseUrl}/hotels/${hotelId}/bookings`);
-  return data;
+type UpcomingBookingsResponse = ManagerBooking[] | { data?: unknown; bookings?: unknown };
+
+function getBookingList(payload: UpcomingBookingsResponse): ManagerBooking[] {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload.bookings)) return payload.bookings as ManagerBooking[];
+  if (Array.isArray(payload.data)) return payload.data as ManagerBooking[];
+  return [];
+}
+
+export async function getUpcomingBookings(token: string): Promise<ManagerBooking[]> {
+  const { data } = await axios.get<UpcomingBookingsResponse>(
+    `${baseUrl}/manager/bookings/upcoming`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+  return getBookingList(data);
 }

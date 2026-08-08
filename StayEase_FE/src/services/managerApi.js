@@ -27,7 +27,16 @@ export async function toggleRoomStatus(roomId, token) {
     });
     return data;
 }
-export async function getUpcomingBookings(hotelId) {
-    const { data } = await axios.get(`${baseUrl}/hotels/${hotelId}/bookings`);
-    return data;
+function getBookingList(payload) {
+    if (Array.isArray(payload))
+        return payload;
+    if (Array.isArray(payload.bookings))
+        return payload.bookings;
+    if (Array.isArray(payload.data))
+        return payload.data;
+    return [];
+}
+export async function getUpcomingBookings(token) {
+    const { data } = await axios.get(`${baseUrl}/manager/bookings/upcoming`, { headers: { Authorization: `Bearer ${token}` } });
+    return getBookingList(data);
 }
