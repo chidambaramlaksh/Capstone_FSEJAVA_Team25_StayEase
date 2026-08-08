@@ -4,17 +4,17 @@ import type { Room, RoomInput } from "../../types/manager";
 
 type Props = {
   room: Room | null;
-  onSave: (values: RoomInput) => void;
+  onSave: (values: RoomInput) => Promise<void>;
   onCancel: () => void;
 };
 const defaultValues: RoomInput = {
   roomNumber: "",
-  roomType: "Single",
+  type: "SINGLE",
   pricePerNight: 0,
   maxOccupancy: 1,
   description: "",
   imageUrl: "",
-  isActive: true,
+  active: true,
 };
 
 export default function RoomForm({ room, onSave, onCancel }: Props) {
@@ -29,12 +29,12 @@ export default function RoomForm({ room, onSave, onCancel }: Props) {
       room
         ? {
             roomNumber: room.roomNumber,
-            roomType: room.roomType,
+            type: room.type,
             pricePerNight: room.pricePerNight,
             maxOccupancy: room.maxOccupancy,
-            description: room.description,
-            imageUrl: room.imageUrl,
-            isActive: room.isActive,
+            description: room.description || "",
+            imageUrl: room.imageUrl || "",
+            active: room.active,
           }
         : defaultValues,
     );
@@ -75,11 +75,11 @@ export default function RoomForm({ room, onSave, onCancel }: Props) {
           </label>
           <label>
             Room type
-            <select {...register("roomType")}>
-              <option>Single</option>
-              <option>Double</option>
-              <option>Suite</option>
-              <option>Deluxe</option>
+            <select {...register("type")}>
+              <option value="SINGLE">Single</option>
+              <option value="DOUBLE">Double</option>
+              <option value="SUITE">Suite</option>
+              <option value="DELUXE">Deluxe</option>
             </select>
           </label>
           <label>
@@ -116,8 +116,8 @@ export default function RoomForm({ room, onSave, onCancel }: Props) {
             Description
             <textarea
               rows={3}
+              placeholder="Describe the room..."
               {...register("description", {
-                required: "Description is required",
                 minLength: { value: 10, message: "Use at least 10 characters" },
               })}
             />
@@ -129,7 +129,6 @@ export default function RoomForm({ room, onSave, onCancel }: Props) {
               type="url"
               placeholder="https://example.com/room.jpg"
               {...register("imageUrl", {
-                required: "Image URL is required",
                 pattern: {
                   value: /^https?:\/\/.+/,
                   message: "Enter a valid http(s) URL",
@@ -139,7 +138,7 @@ export default function RoomForm({ room, onSave, onCancel }: Props) {
             {errors.imageUrl && <small>{errors.imageUrl.message}</small>}
           </label>
           <label className="manager-toggle">
-            <input type="checkbox" {...register("isActive")} />
+            <input type="checkbox" {...register("active")} />
             <span>Room is active and available for booking</span>
           </label>
           <div className="manager-form__actions">
@@ -150,8 +149,12 @@ export default function RoomForm({ room, onSave, onCancel }: Props) {
             >
               Cancel
             </button>
-            <button className="button" disabled={isSubmitting} type="submit">
-              {room ? "Save changes" : "Add room"}
+            <button
+              className="button"
+              type="submit"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Saving..." : "Save room"}
             </button>
           </div>
         </form>

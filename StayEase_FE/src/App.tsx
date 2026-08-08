@@ -22,7 +22,7 @@ export default function App() {
       <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
         <Route path="/admin/home" element={<AdminHome />} />
       </Route>
-      <Route element={<ProtectedRoute allowedRoles={["MANAGER"]} />}>
+      <Route element={<ProtectedRoute allowedRoles={["HOTEL_MANAGER"]} />}>
         <Route path="/manager" element={<ManagerLayout />}>
           <Route index element={<ManagerDashboard />} />
           <Route path="rooms" element={<RoomManagement />} />

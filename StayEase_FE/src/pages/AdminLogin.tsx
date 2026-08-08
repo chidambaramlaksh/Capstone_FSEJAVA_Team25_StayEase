@@ -11,9 +11,11 @@ export default function AdminLogin() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const role = user?.role ?? user?.userType;
-    if (user && role?.toLowerCase() === "admin") {
+    const role = String(user?.role ?? user?.userType ?? "user").toLowerCase();
+    if (user && role === "admin") {
       navigate("/admin/home", { replace: true });
+    } else if (user && role === "hotel_manager") {
+      navigate("/manager", { replace: true });
     }
   }, [navigate, user]);
 
@@ -24,13 +26,19 @@ export default function AdminLogin() {
 
     try {
       const authenticatedUser = await login(email, password);
-      const role = authenticatedUser?.role ?? authenticatedUser?.userType;
-      if (authenticatedUser && role?.toLowerCase() === "admin") {
+      const role = String(
+        authenticatedUser?.role ?? authenticatedUser?.userType ?? "user",
+      ).toLowerCase();
+      if (authenticatedUser && role === "admin") {
         navigate("/admin/home", { replace: true });
         return;
       }
+      if (authenticatedUser && role === "hotel_manager") {
+        navigate("/manager", { replace: true });
+        return;
+      }
 
-      setError("This account does not have admin access.");
+      setError("This account does not have admin or manager access.");
     } catch {
       setError("Unable to sign in. Please check your credentials.");
     } finally {
@@ -49,9 +57,9 @@ export default function AdminLogin() {
       <section className="confirmation-wrap">
         <div className="confirmation-status">
           <span>🔐</span>
-          <p className="eyebrow">ADMIN ACCESS</p>
+          <p className="eyebrow">ADMIN & MANAGER ACCESS</p>
           <h1>Sign in to continue.</h1>
-          <p>Use the admin credentials to enter the management area.</p>
+          <p>Use your admin or manager credentials to enter the management area.</p>
         </div>
 
         <div className="booking-card">
@@ -81,7 +89,7 @@ export default function AdminLogin() {
                 type="submit"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Signing in..." : "Login as admin"}
+                {isSubmitting ? "Signing in..." : "Login"}
               </button>
             </form>
           </div>

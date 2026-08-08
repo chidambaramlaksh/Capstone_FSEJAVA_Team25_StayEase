@@ -1,25 +1,37 @@
-export type UserRole = "MANAGER";
+export type UserRole = "HOTEL_MANAGER";
 
 export type ManagerUser = {
   name: string;
   email: string;
   role: UserRole;
-  hotelId: number;
+  managedHotelId: number;
 };
+
+export type RoomType = "SINGLE" | "DOUBLE" | "SUITE" | "DELUXE";
 
 export type Room = {
-  id: string;
+  id: number;
   hotelId: number;
   roomNumber: string;
-  roomType: "Single" | "Double" | "Suite" | "Deluxe";
+  type: RoomType;
   pricePerNight: number;
   maxOccupancy: number;
-  description: string;
-  imageUrl: string;
-  isActive: boolean;
+  description?: string;
+  imageUrl?: string;
+  active: boolean;
+  available: number;
 };
 
-export type RoomInput = Omit<Room, "id" | "hotelId">;
+export type RoomInput = {
+  roomNumber: string;
+  type: RoomType;
+  pricePerNight: number;
+  maxOccupancy?: number;
+  description?: string;
+  imageUrl?: string;
+  active?: boolean;
+  available?: number;
+};
 
 export type ManagerBooking = {
   id: string;
