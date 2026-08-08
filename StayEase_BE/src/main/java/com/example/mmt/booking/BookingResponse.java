@@ -5,14 +5,17 @@ import java.time.Instant;
 import java.time.LocalDate;
 
 public record BookingResponse(Long id, String bookingRef, Long guestId, Long roomId,
-                              Long hotelId, String hotelName, String guestEmail,
+                              Long hotelId, String hotelName, String guestName, String guestEmail,
+                              String roomNumber, String roomType,
                               LocalDate checkInDate, LocalDate checkOutDate,
                               BookingStatus status, BigDecimal totalPrice, Instant createdAt) {
     public static BookingResponse from(Booking booking) {
         return new BookingResponse(
                 booking.getId(), booking.getBookingRef(), booking.getGuest().getId(),
                 booking.getRoom().getId(), booking.getRoom().getHotel().getId(),
-                booking.getRoom().getHotel().getName(), booking.getGuest().getEmail(),
+                booking.getRoom().getHotel().getName(), booking.getGuest().getName(),
+                booking.getGuest().getEmail(), booking.getRoom().getRoomNumber(),
+                booking.getRoom().getType().name(),
                 booking.getCheckInDate(), booking.getCheckOutDate(), booking.getStatus(),
                 booking.getTotalPrice(), booking.getCreatedAt());
     }
