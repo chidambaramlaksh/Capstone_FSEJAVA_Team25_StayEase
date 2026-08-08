@@ -1,21 +1,4 @@
-import axios from "axios";
 const delay = (milliseconds = 250) => new Promise((resolve) => window.setTimeout(resolve, milliseconds));
-export async function loginManager(email, password) {
-    const { data } = await axios.get("/mockAPI.json");
-    await delay();
-    const user = data.login?.users?.find((entry) => entry.email.toLowerCase() === email.trim().toLowerCase());
-    if (!user ||
-        user.userType?.toLowerCase() !== "manager" ||
-        password !== (data.login?.allowedPassword ?? "123456")) {
-        return null;
-    }
-    return {
-        name: user.name,
-        email: user.email,
-        role: "MANAGER",
-        hotelId: user.hotelId ?? 1,
-    };
-}
 export async function getUpcomingBookings(hotelId) {
     await delay();
     return mockBookings.filter((booking) => booking.hotelId === hotelId);

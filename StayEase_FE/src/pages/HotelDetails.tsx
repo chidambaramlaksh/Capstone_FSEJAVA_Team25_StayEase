@@ -1,24 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useBookings } from "../context/BookingContext";
-
-type Room = {
-  category: "Single" | "Double" | "Suite";
-  description: string;
-  price: number;
-  available: number;
-  maxOccupancy: number;
-};
-
-type Hotel = {
-  id: number;
-  name: string;
-  description: string;
-  city: string;
-  image: string;
-  rating: number;
-  rooms: Room[];
-};
+import { useAuth } from "../context/AuthContext";
+import { useHotels } from "../context/HotelContext";
+import type { HotelRoom } from "../services/hotelApi";
+import { createBooking } from "../services/bookingsApi";
 
 type Search = { city: string; checkIn: string; checkOut: string };
 
@@ -33,24 +19,14 @@ export default function HotelDetails() {
   const location = useLocation();
   const navigate = useNavigate();
   const { addBooking } = useBookings();
-  const [hotel, setHotel] = useState<Hotel | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+  const { getHotelById } = useHotels();
+  const [isBooking, setIsBooking] = useState(false);
+  const [bookingError, setBookingError] = useState("");
+  const hotel = getHotelById(hotelId ?? "");
   const activeSearch = (location.state as { activeSearch?: Search } | null)
     ?.activeSearch;
 
-  useEffect(() => {
-    fetch("/mockAPI.json")
-      .then((response) => response.json())
-      .then((data: { hotels: Hotel[] }) => {
-        setHotel(
-          data.hotels.find((item) => item.id === Number(hotelId)) ?? null,
-        );
-      })
-      .finally(() => setIsLoading(false));
-  }, [hotelId]);
-
-  if (isLoading)
-    return <main className="page-message">Loading hotel details…</main>;
   if (!hotel) {
     return (
       <main className="page-message">
@@ -60,14 +36,37 @@ export default function HotelDetails() {
     );
   }
 
-  const reserveRoom = (room: Room) => {
+  const reserveRoom = async (room: HotelRoom) => {
     if (room.available <= 0) return;
+
+    setBookingError("");
+    if (!user?.token) {
+      setBookingError("Please log in before reserving a room.");
+      return;
+    }
 
     const bookingSearch = activeSearch ?? {
       city: hotel.city,
       checkIn: "",
       checkOut: "",
     };
+    if (
+      !bookingSearch.checkIn ||
+      !bookingSearch.checkOut ||
+      bookingSearch.checkOut <= bookingSearch.checkIn
+    ) {
+      setBookingError("Please select valid check-in and check-out dates.");
+      return;
+    }
+
+    setIsBooking(true);
+    try {
+      await createBooking(user.token, {
+        roomId: room.id,
+        checkInDate: bookingSearch.checkIn,
+        checkOutDate: bookingSearch.checkOut,
+      });
+
     const bookingId = `SE-${Date.now().toString().slice(-8)}-${hotel.id}${room.category.charAt(0)}`;
     const bookingEntry = {
       bookingId,
@@ -81,13 +80,18 @@ export default function HotelDetails() {
       checkOut: bookingSearch.checkOut,
       totalPrice: getNights(bookingSearch.checkIn, bookingSearch.checkOut) * room.price,
       bookedOn: new Date().toISOString(),
-      userEmail: window.localStorage.getItem("stayease-user-email") ?? undefined,
+      userEmail: user?.email,
     };
 
     addBooking(bookingEntry);
     navigate("/booking-confirmation", {
       state: { bookingId, hotel, room, search: bookingSearch, bookingEntry },
     });
+    } catch {
+      setBookingError("Unable to reserve this room. Please try again.");
+    } finally {
+      setIsBooking(false);
+    }
   };
 
   return (
@@ -123,6 +127,7 @@ export default function HotelDetails() {
           </div>
           <p>All prices are per night, inclusive of taxes.</p>
         </div>
+        {bookingError ? <p className="validation">{bookingError}</p> : null}
         <div className="room-list">
           {hotel.rooms.map((room) => {
             const isAvailable = room.available > 0;
@@ -151,10 +156,10 @@ export default function HotelDetails() {
                   <span>per night</span>
                   <button
                     type="button"
-                    disabled={!isAvailable}
+                    disabled={!isAvailable || isBooking}
                     onClick={() => reserveRoom(room)}
                   >
-                    {isAvailable ? "Reserve room" : "Sold out"}
+                    {isBooking ? "Reserving…" : isAvailable ? "Reserve room" : "Sold out"}
                   </button>
                 </div>
               </article>

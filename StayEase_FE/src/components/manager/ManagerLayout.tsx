@@ -4,8 +4,6 @@ import { useAuth } from "../../context/AuthContext";
 export default function ManagerLayout() {
   const { user, logout } = useAuth();
   const handleLogout = () => {
-    window.localStorage.removeItem("stayease-user-email");
-    window.localStorage.removeItem("stayease-user-type");
     logout();
   };
   return (

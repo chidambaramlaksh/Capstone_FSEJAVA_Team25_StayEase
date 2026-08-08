@@ -1,28 +1,21 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-
-type LoginUser = { name: string; email: string; userType?: string };
-type LoginResponse = {
-  success: boolean;
-  message: string;
-  users?: LoginUser[];
-  allowedPassword?: string;
-};
+import { useAuth } from "../context/AuthContext";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const { user, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const storedEmail = window.localStorage.getItem("stayease-user-email");
-    const storedType = window.localStorage.getItem("stayease-user-type");
-    if (storedEmail && storedType === "admin") {
+    const role = user?.role ?? user?.userType;
+    if (user && role?.toLowerCase() === "admin") {
       navigate("/admin/home", { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, user]);
 
   const submitLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -30,30 +23,16 @@ export default function AdminLogin() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("/mockAPI.json");
-      const data: { login?: LoginResponse } = await response.json();
-      const users = data.login?.users ?? [];
-      const expectedPassword = data.login?.allowedPassword ?? "123456";
-      const matchingUser = users.find(
-        (user) => user.email.toLowerCase() === email.trim().toLowerCase(),
-      );
-
-      if (
-        matchingUser &&
-        matchingUser.userType?.toLowerCase() === "admin" &&
-        password.trim() === expectedPassword
-      ) {
-        window.localStorage.setItem("stayease-user-email", matchingUser.email);
-        window.localStorage.setItem("stayease-user-type", "admin");
+      const authenticatedUser = await login(email, password);
+      const role = authenticatedUser?.role ?? authenticatedUser?.userType;
+      if (authenticatedUser && role?.toLowerCase() === "admin") {
         navigate("/admin/home", { replace: true });
         return;
       }
 
-      setError(
-        "Invalid admin credentials. Use ankita_admin@gmail.com with password 123456.",
-      );
+      setError("This account does not have admin access.");
     } catch {
-      setError("Unable to load admin credentials.");
+      setError("Unable to sign in. Please check your credentials.");
     } finally {
       setIsSubmitting(false);
     }

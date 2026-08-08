@@ -1,42 +1,7 @@
-import axios from "axios";
-import type { ManagerBooking, ManagerUser } from "../types/manager";
-
-type MockUser = {
-  name: string;
-  email: string;
-  userType?: string;
-  hotelId?: number;
-};
-type MockPayload = { login?: { users?: MockUser[]; allowedPassword?: string } };
+import type { ManagerBooking } from "../types/manager";
 
 const delay = (milliseconds = 250) =>
   new Promise((resolve) => window.setTimeout(resolve, milliseconds));
-
-export async function loginManager(
-  email: string,
-  password: string,
-): Promise<ManagerUser | null> {
-  const { data } = await axios.get<MockPayload>("/mockAPI.json");
-  await delay();
-  const user = data.login?.users?.find(
-    (entry) => entry.email.toLowerCase() === email.trim().toLowerCase(),
-  );
-
-  if (
-    !user ||
-    user.userType?.toLowerCase() !== "manager" ||
-    password !== (data.login?.allowedPassword ?? "123456")
-  ) {
-    return null;
-  }
-
-  return {
-    name: user.name,
-    email: user.email,
-    role: "MANAGER",
-    hotelId: user.hotelId ?? 1,
-  };
-}
 
 export async function getUpcomingBookings(
   hotelId: number,

@@ -19,7 +19,9 @@ export default function App() {
       <Route path="/booking-confirmation" element={<BookingConfirmation />} />
       <Route path="/bookings" element={<Bookings />} />
       <Route path="/admin" element={<AdminLogin />} />
-      <Route path="/admin/home" element={<AdminHome />} />
+      <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
+        <Route path="/admin/home" element={<AdminHome />} />
+      </Route>
       <Route element={<ProtectedRoute allowedRoles={["MANAGER"]} />}>
         <Route path="/manager" element={<ManagerLayout />}>
           <Route index element={<ManagerDashboard />} />
