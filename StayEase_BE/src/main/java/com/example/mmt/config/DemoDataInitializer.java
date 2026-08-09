@@ -26,8 +26,12 @@ public class DemoDataInitializer {
                         encoder.encode("admin123"), Role.ADMIN, null));
             }
             if (!users.existsByEmail("manager@demo.com")) {
-                users.save(new AppUser("manager@demo.com", "manager@demo.com", "Demo Manager",
+                AppUser manager = users.save(new AppUser("manager@demo.com", "manager@demo.com", "Demo Manager",
                         encoder.encode("manager123"), Role.HOTEL_MANAGER, hotel.getId()));
+                hotel.updateAdminDetails(hotel.getName(), hotel.getCity(), hotel.getDescription(),
+                        hotel.getImage(), hotel.getRating());
+                hotel.assignManager(manager.getId());
+                hotels.save(hotel);
             }
             if (!users.existsByEmail("user1@gmail.com")) {
                 users.save(new AppUser("user1@gmail.com", "user1@gmail.com", "User One",

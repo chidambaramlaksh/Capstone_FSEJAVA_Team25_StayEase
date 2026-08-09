@@ -6,18 +6,21 @@ import { BookingProvider } from "./context/BookingContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ManagerProvider } from "./context/ManagerContext";
 import { HotelProvider } from "./context/HotelContext";
+import { AdminProvider } from "./context/AdminContext";
 import "./styles/global.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
     <AuthProvider>
-      <ManagerProvider>
-        <HotelProvider>
-          <BookingProvider>
-            <App />
-          </BookingProvider>
-        </HotelProvider>
-      </ManagerProvider>
+      <AdminProvider>
+        <ManagerProvider>
+          <HotelProvider>
+            <BookingProvider>
+              <App />
+            </BookingProvider>
+          </HotelProvider>
+        </ManagerProvider>
+      </AdminProvider>
     </AuthProvider>
   </BrowserRouter>,
 );

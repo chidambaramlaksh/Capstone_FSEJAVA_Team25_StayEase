@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
+    boolean existsByRoom_Hotel_Id(Long hotelId);
+
     List<Booking> findByGuestUsernameOrderByCreatedAtDesc(String username);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

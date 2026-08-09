@@ -35,6 +35,9 @@ public class Hotel {
     @Column(precision = 12, scale = 2)
     private BigDecimal price;
 
+    // The application currently supports one hotel assignment per manager.
+    private Long managerId;
+
     @OneToMany(mappedBy = "hotel", fetch = FetchType.LAZY)
     private List<Room> rooms = new ArrayList<>();
 
@@ -64,6 +67,7 @@ public class Hotel {
     public String getImage() { return image; }
     public BigDecimal getRating() { return rating; }
     public BigDecimal getPrice() { return price; }
+    public Long getManagerId() { return managerId; }
     public List<Room> getRooms() { return rooms; }
 
     public void update(String name, String address, String city) {
@@ -71,4 +75,18 @@ public class Hotel {
         this.address = address;
         this.city = city;
     }
+
+    public void updateAdminDetails(String name, String city, String description,
+                                   String coverImageUrl, BigDecimal starRating) {
+        this.name = name;
+        // Address is retained for compatibility with the existing hotel model.
+        this.address = city;
+        this.city = city;
+        this.description = description;
+        this.image = coverImageUrl;
+        this.rating = starRating;
+    }
+
+    public void assignManager(Long managerId) { this.managerId = managerId; }
+    public void clearManager() { this.managerId = null; }
 }

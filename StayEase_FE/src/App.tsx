@@ -4,7 +4,9 @@ import HotelDetails from "./pages/HotelDetails";
 import BookingConfirmation from "./pages/BookingConfirmation";
 import Bookings from "./pages/Bookings";
 import AdminLogin from "./pages/AdminLogin";
-import AdminHome from "./pages/AdminHome";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import HotelManagement from "./pages/admin/HotelManagement";
+import AdminLayout from "./components/admin/AdminLayout";
 import ManagerDashboard from "./pages/manager/ManagerDashboard";
 import RoomManagement from "./pages/manager/RoomManagement";
 import UpcomingBookings from "./pages/manager/UpcomingBookings";
@@ -20,7 +22,10 @@ export default function App() {
       <Route path="/bookings" element={<Bookings />} />
       <Route path="/admin" element={<AdminLogin />} />
       <Route element={<ProtectedRoute allowedRoles={["ADMIN"]} />}>
-        <Route path="/admin/home" element={<AdminHome />} />
+        <Route path="/admin/home" element={<AdminLayout />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="hotels" element={<HotelManagement />} />
+        </Route>
       </Route>
       <Route element={<ProtectedRoute allowedRoles={["HOTEL_MANAGER"]} />}>
         <Route path="/manager" element={<ManagerLayout />}>

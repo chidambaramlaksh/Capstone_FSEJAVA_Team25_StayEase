@@ -61,6 +61,8 @@ public class AppUser implements UserDetails {
     public Long getManagedHotelId() { return managedHotelId; }
     public List<Booking> getBookings() { return bookings; }
 
+    public void setManagedHotelId(Long managedHotelId) { this.managedHotelId = managedHotelId; }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));

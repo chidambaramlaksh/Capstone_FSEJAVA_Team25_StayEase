@@ -6,5 +6,6 @@ import { BookingProvider } from "./context/BookingContext";
 import { AuthProvider } from "./context/AuthContext";
 import { ManagerProvider } from "./context/ManagerContext";
 import { HotelProvider } from "./context/HotelContext";
+import { AdminProvider } from "./context/AdminContext";
 import "./styles/global.css";
-ReactDOM.createRoot(document.getElementById("root")).render(_jsx(BrowserRouter, { children: _jsx(AuthProvider, { children: _jsx(ManagerProvider, { children: _jsx(HotelProvider, { children: _jsx(BookingProvider, { children: _jsx(App, {}) }) }) }) }) }));
+ReactDOM.createRoot(document.getElementById("root")).render(_jsx(BrowserRouter, { children: _jsx(AuthProvider, { children: _jsx(AdminProvider, { children: _jsx(ManagerProvider, { children: _jsx(HotelProvider, { children: _jsx(BookingProvider, { children: _jsx(App, {}) }) }) }) }) }) }));

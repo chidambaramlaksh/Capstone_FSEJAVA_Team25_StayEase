@@ -29,13 +29,19 @@ public class HotelController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
-    public HotelResponse create(@Valid @RequestBody HotelRequest request) {
+    public AdminHotelResponse create(@Valid @RequestBody HotelRequest request) {
         return hotels.create(request);
+    }
+
+    @GetMapping("/admin/directory")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<AdminHotelResponse> adminDirectory() {
+        return hotels.findAllForAdmin();
     }
 
     @PutMapping("/{hotelId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public HotelResponse update(@PathVariable Long hotelId, @Valid @RequestBody HotelRequest request) {
+    public AdminHotelResponse update(@PathVariable Long hotelId, @Valid @RequestBody HotelRequest request) {
         return hotels.update(hotelId, request);
     }
 
