@@ -7,6 +7,7 @@ import com.example.mmt.room.Room;
 import com.example.mmt.room.RoomRepository;
 import com.example.mmt.room.RoomType;
 import com.example.mmt.user.AppUserRepository;
+import com.example.mmt.user.Role;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,8 +54,13 @@ public class HotelService {
 
     @Transactional
     public AdminHotelResponse create(HotelRequest request) {
+        Long defaultManagerId = users.findFirstByRoleOrderByIdAsc(Role.HOTEL_MANAGER)
+                .orElseThrow(() -> new BadRequestException("No hotel manager is available for this hotel"))
+                .getId();
         Hotel hotel = new Hotel(request.name(), request.city(), request.city(), request.description(),
                 request.coverImageUrl(), request.starRating(), DEFAULT_SINGLE_PRICE);
+        // Keep the manager's primary managedHotelId unchanged so existing room management is unaffected.
+        hotel.assignManager(defaultManagerId);
         Hotel savedHotel = hotels.save(hotel);
         rooms.saveAll(List.of(
                 defaultRoom(savedHotel, "101", RoomType.SINGLE,

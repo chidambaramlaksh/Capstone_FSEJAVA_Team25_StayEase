@@ -37,6 +37,7 @@ export type ManagerBooking = {
   id: number;
   bookingRef: string;
   hotelId: number;
+  hotelName: string;
   guestName: string;
   guestEmail: string;
   roomNumber: string;

@@ -52,7 +52,7 @@ export default function UpcomingBookings() {
     () =>
       bookings.filter(
         (booking) =>
-          (booking.guestName + booking.guestEmail + booking.roomNumber)
+          (booking.guestName + booking.guestEmail + booking.hotelName + booking.roomNumber)
             .toLowerCase()
             .includes(query.toLowerCase()) &&
           (status === "all" || booking.status === status),
@@ -65,13 +65,13 @@ export default function UpcomingBookings() {
         <div>
           <p className="eyebrow">GUEST STAYS</p>
           <h1>Upcoming bookings</h1>
-          <p>Reservations arriving soon at The Marine House.</p>
+          <p>Reservations arriving soon across your assigned hotels.</p>
         </div>
       </div>
       <div className="manager-toolbar">
         <input
           aria-label="Search bookings"
-          placeholder="Search guest, email, or room…"
+          placeholder="Search guest, hotel, email, or room…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
@@ -108,7 +108,7 @@ export default function UpcomingBookings() {
                   </td>
                   <td>
                     <strong>{booking.roomNumber}</strong>
-                    <span>{booking.roomType}</span>
+                    <span>{booking.hotelName} · {booking.roomType}</span>
                   </td>
                   <td>
                     <strong>{formatDate(booking.checkInDate)}</strong>
