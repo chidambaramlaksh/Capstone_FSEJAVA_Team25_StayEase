@@ -59,7 +59,7 @@ export function AdminProvider({ children }) {
             await adminApi.deleteHotel(hotelId, user.token);
             setHotels((current) => current.filter((item) => item.id !== hotelId));
         },
-    }), [error, isLoading, user?.token]);
+    }), [error, hotels, isLoading, user?.token]);
     return _jsx(AdminContext.Provider, { value: value, children: children });
 }
 export function useAdmin() {

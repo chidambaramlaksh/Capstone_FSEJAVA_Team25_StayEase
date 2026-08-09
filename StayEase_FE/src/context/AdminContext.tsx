@@ -71,7 +71,7 @@ export function AdminProvider({ children }: { children: ReactNode }) {
       await adminApi.deleteHotel(hotelId, user.token);
       setHotels((current) => current.filter((item) => item.id !== hotelId));
     },
-  }), [error, isLoading, user?.token]);
+  }), [error, hotels, isLoading, user?.token]);
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 }
