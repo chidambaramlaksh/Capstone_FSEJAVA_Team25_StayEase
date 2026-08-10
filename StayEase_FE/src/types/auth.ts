@@ -5,7 +5,6 @@ export type AuthUser = {
   name: string;
   role?: string;
   userType?: string;
-  hotelId?: number;
+  managedHotelId?: number;
   [key: string]: unknown;
 };
-

@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
+    boolean existsByRoom_Hotel_Id(Long hotelId);
+
     List<Booking> findByGuestUsernameOrderByCreatedAtDesc(String username);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -18,11 +20,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findByIdForUpdate(@Param("bookingId") Long bookingId);
 
     @Query("""
-            select b from Booking b where b.room.hotel.id = :hotelId
+            select b from Booking b where (b.room.hotel.managerId = :managerId
+            or b.room.hotel.id = :managedHotelId)
             and b.status = :status and b.checkOutDate >= :today
             order by b.checkInDate asc
             """)
-    List<Booking> findUpcomingForHotel(@Param("hotelId") Long hotelId,
+    List<Booking> findUpcomingForManager(@Param("managerId") Long managerId,
+                                         @Param("managedHotelId") Long managedHotelId,
                                        @Param("status") BookingStatus status,
                                        @Param("today") LocalDate today);
 }

@@ -69,7 +69,8 @@ public class BookingService {
         if (manager.getManagedHotelId() == null) {
             throw new BadRequestException("Manager is not assigned to a hotel");
         }
-        return bookings.findUpcomingForHotel(manager.getManagedHotelId(), BookingStatus.BOOKED, LocalDate.now())
+        return bookings.findUpcomingForManager(manager.getId(), manager.getManagedHotelId(),
+                        BookingStatus.BOOKED, LocalDate.now())
                 .stream().map(BookingResponse::from).toList();
     }
 

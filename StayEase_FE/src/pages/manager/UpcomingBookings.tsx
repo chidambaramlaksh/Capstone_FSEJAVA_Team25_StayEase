@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { getUpcomingBookings } from "../../services/managerMockApi";
+import { getUpcomingBookings } from "../../services/managerApi";
 import type { ManagerBooking } from "../../types/manager";
 
 const formatDate = (value: string) =>
@@ -15,18 +15,44 @@ export default function UpcomingBookings() {
   const [bookings, setBookings] = useState<ManagerBooking[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("all");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   useEffect(() => {
-    if (!user || user.hotelId === undefined) return;
-    getUpcomingBookings(user.hotelId)
-      .then(setBookings)
-      .finally(() => setLoading(false));
-  }, [user]);
+    if (!user?.token || typeof user.managedHotelId !== "number") {
+      setBookings([]);
+      setLoading(false);
+      return;
+    }
+
+    let isCurrentRequest = true;
+    setLoading(true);
+    setError("");
+
+    getUpcomingBookings(user.token)
+      .then((upcomingBookings) => {
+        if (isCurrentRequest) setBookings(upcomingBookings);
+      })
+      .catch(() => {
+        if (isCurrentRequest) {
+          setBookings([]);
+          setError("Unable to load upcoming bookings. Please try again.");
+        }
+      })
+      .finally(() => {
+        if (isCurrentRequest) setLoading(false);
+      });
+
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [user?.managedHotelId, user?.token]);
+
   const filtered = useMemo(
     () =>
       bookings.filter(
         (booking) =>
-          (booking.guestName + booking.guestEmail + booking.roomNumber)
+          (booking.guestName + booking.guestEmail + booking.hotelName + booking.roomNumber)
             .toLowerCase()
             .includes(query.toLowerCase()) &&
           (status === "all" || booking.status === status),
@@ -39,13 +65,13 @@ export default function UpcomingBookings() {
         <div>
           <p className="eyebrow">GUEST STAYS</p>
           <h1>Upcoming bookings</h1>
-          <p>Reservations arriving soon at The Marine House.</p>
+          <p>Reservations arriving soon across your assigned hotels.</p>
         </div>
       </div>
       <div className="manager-toolbar">
         <input
           aria-label="Search bookings"
-          placeholder="Search guest, email, or room…"
+          placeholder="Search guest, hotel, email, or room…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
@@ -55,11 +81,12 @@ export default function UpcomingBookings() {
           onChange={(event) => setStatus(event.target.value)}
         >
           <option value="all">All booking statuses</option>
-          <option>Confirmed</option>
-          <option>Pending</option>
+          <option value="BOOKED">Confirmed</option>
         </select>
       </div>
-      {loading ? (
+      {error ? (
+        <p className="manager-empty" role="alert">{error}</p>
+      ) : loading ? (
         <p className="manager-empty">Loading bookings…</p>
       ) : (
         <div className="booking-table-wrap">
@@ -69,7 +96,6 @@ export default function UpcomingBookings() {
                 <th>Guest</th>
                 <th>Room</th>
                 <th>Stay</th>
-                <th>Guests</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -82,23 +108,14 @@ export default function UpcomingBookings() {
                   </td>
                   <td>
                     <strong>{booking.roomNumber}</strong>
-                    <span>{booking.roomType}</span>
+                    <span>{booking.hotelName} · {booking.roomType}</span>
                   </td>
                   <td>
-                    <strong>{formatDate(booking.checkIn)}</strong>
-                    <span>to {formatDate(booking.checkOut)}</span>
+                    <strong>{formatDate(booking.checkInDate)}</strong>
+                    <span>to {formatDate(booking.checkOutDate)}</span>
                   </td>
-                  <td>{booking.guests}</td>
                   <td>
-                    <span
-                      className={
-                        booking.status === "Confirmed"
-                          ? "status status--active"
-                          : "status status--pending"
-                      }
-                    >
-                      {booking.status}
-                    </span>
+                    <span className="status status--active">Confirmed</span>
                   </td>
                 </tr>
               ))}

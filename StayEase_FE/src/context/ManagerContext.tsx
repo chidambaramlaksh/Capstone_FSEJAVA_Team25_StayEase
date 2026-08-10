@@ -6,90 +6,108 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import * as managerApi from "../services/managerApi";
+import { useAuth } from "./AuthContext";
 import type { Room, RoomInput } from "../types/manager";
 
 type ManagerContextValue = {
   rooms: Room[];
-  addRoom: (hotelId: number, room: RoomInput) => void;
-  updateRoom: (id: string, room: RoomInput) => void;
-  deleteRoom: (id: string) => void;
+  isLoading: boolean;
+  error: string | null;
+  addRoom: (hotelId: number, room: RoomInput) => Promise<void>;
+  updateRoom: (id: number, room: RoomInput) => Promise<void>;
+  deleteRoom: (id: number) => Promise<void>;
+  toggleRoomStatus: (id: number) => Promise<void>;
 };
 
-const storageKey = "stayease-manager-rooms";
-const starterRooms: Room[] = [
-  {
-    id: "r-101",
-    hotelId: 1,
-    roomNumber: "101",
-    roomType: "Single",
-    pricePerNight: 8500,
-    maxOccupancy: 1,
-    description: "A quiet sea-facing room with a work desk.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=480&q=80",
-    isActive: true,
-  },
-  {
-    id: "r-202",
-    hotelId: 1,
-    roomNumber: "202",
-    roomType: "Double",
-    pricePerNight: 11200,
-    maxOccupancy: 2,
-    description: "A spacious king room with coastal accents.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=480&q=80",
-    isActive: true,
-  },
-  {
-    id: "r-301",
-    hotelId: 1,
-    roomNumber: "301",
-    roomType: "Suite",
-    pricePerNight: 16900,
-    maxOccupancy: 3,
-    description: "A premium suite with a private lounge.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=480&q=80",
-    isActive: false,
-  },
-];
 const ManagerContext = createContext<ManagerContextValue | undefined>(
   undefined,
 );
 
 export function ManagerProvider({ children }: { children: ReactNode }) {
-  const [rooms, setRooms] = useState<Room[]>(() => {
-    try {
-      return (
-        (JSON.parse(
-          window.localStorage.getItem(storageKey) ?? "null",
-        ) as Room[]) ?? starterRooms
-      );
-    } catch {
-      return starterRooms;
-    }
-  });
+  const { user } = useAuth();
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load rooms when user logs in as manager
   useEffect(() => {
-    window.localStorage.setItem(storageKey, JSON.stringify(rooms));
-  }, [rooms]);
+    if (user && typeof user.managedHotelId === 'number') {
+      loadRooms(user.managedHotelId);
+    }
+  }, [user?.managedHotelId]);
+
+  const loadRooms = async (hotelId: number) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await managerApi.getRoomsByHotel(hotelId);
+      setRooms(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load rooms");
+      setRooms([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const value = useMemo(
     () => ({
       rooms,
-      addRoom: (hotelId: number, room: RoomInput) =>
-        setRooms((current) => [
-          { ...room, hotelId, id: `room-${Date.now()}` },
-          ...current,
-        ]),
-      updateRoom: (id: string, room: RoomInput) =>
-        setRooms((current) =>
-          current.map((item) => (item.id === id ? { ...item, ...room } : item)),
-        ),
-      deleteRoom: (id: string) =>
-        setRooms((current) => current.filter((item) => item.id !== id)),
+      isLoading,
+      error,
+      addRoom: async (hotelId: number, room: RoomInput) => {
+        try {
+          setError(null);
+          const newRoom = await managerApi.createRoom(hotelId, room, user?.token);
+          setRooms((current) => [newRoom, ...current]);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to create room";
+          setError(message);
+          throw err;
+        }
+      },
+      updateRoom: async (id: number, room: RoomInput) => {
+        try {
+          setError(null);
+          const updated = await managerApi.updateRoom(id, room, user?.token);
+          setRooms((current) =>
+            current.map((item) => (item.id === id ? updated : item)),
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to update room";
+          setError(message);
+          throw err;
+        }
+      },
+      deleteRoom: async (id: number) => {
+        try {
+          setError(null);
+          await managerApi.deleteRoom(id, user?.token);
+          setRooms((current) => current.filter((item) => item.id !== id));
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to delete room";
+          setError(message);
+          throw err;
+        }
+      },
+      toggleRoomStatus: async (id: number) => {
+        try {
+          setError(null);
+          const updated = await managerApi.toggleRoomStatus(id, user?.token);
+          setRooms((current) =>
+            current.map((item) => (item.id === id ? updated : item)),
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : "Failed to toggle room status";
+          setError(message);
+          throw err;
+        }
+      },
     }),
-    [rooms],
+    [rooms, isLoading, error, user?.token],
   );
+
   return (
     <ManagerContext.Provider value={value}>{children}</ManagerContext.Provider>
   );

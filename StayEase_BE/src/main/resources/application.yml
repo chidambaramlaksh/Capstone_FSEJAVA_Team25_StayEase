@@ -16,7 +16,7 @@ spring:
       enabled: true
 
 app:
-  seed-demo-data: false
+  seed-demo-data: true
   jwt:
     # Replace this in production with a secret of at least 32 characters.
     secret: change-this-development-secret-key-please

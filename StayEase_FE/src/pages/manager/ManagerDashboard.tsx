@@ -5,8 +5,7 @@ import { useManager } from "../../context/ManagerContext";
 export default function ManagerDashboard() {
   const { user } = useAuth();
   const { rooms } = useManager();
-  const hotelRooms = rooms.filter((room) => room.hotelId === user?.hotelId);
-  const activeRooms = hotelRooms.filter((room) => room.isActive).length;
+  const activeRooms = rooms.filter((room) => room.active).length;
   return (
     <section className="manager-page">
       <div className="manager-page__intro">
@@ -19,7 +18,7 @@ export default function ManagerDashboard() {
       <div className="manager-stats">
         <article>
           <span>Total rooms</span>
-          <strong>{hotelRooms.length}</strong>
+          <strong>{rooms.length}</strong>
           <small>In your inventory</small>
         </article>
         <article>
@@ -29,7 +28,7 @@ export default function ManagerDashboard() {
         </article>
         <article>
           <span>Inactive rooms</span>
-          <strong>{hotelRooms.length - activeRooms}</strong>
+          <strong>{rooms.length - activeRooms}</strong>
           <small>Currently hidden</small>
         </article>
       </div>

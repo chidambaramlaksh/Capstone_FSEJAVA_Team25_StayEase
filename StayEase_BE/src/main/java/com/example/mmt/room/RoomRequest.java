@@ -7,7 +7,13 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
-public record RoomRequest(@NotBlank String roomNumber, @NotNull RoomType type,
-                          @NotNull @DecimalMin("0.01") BigDecimal pricePerNight,
-                          Boolean active, @Min(0) Integer available) {
+public record RoomRequest(
+        @NotBlank String roomNumber, 
+        @NotNull RoomType type,
+        @NotNull @DecimalMin("0.01") BigDecimal pricePerNight,
+        @Min(1) Integer maxOccupancy,
+        String description,
+        String imageUrl,
+        Boolean active, 
+        @Min(0) Integer available) {
 }

@@ -54,4 +54,10 @@ public class RoomController {
     public void delete(@PathVariable Long roomId, @AuthenticationPrincipal AppUser manager) {
         rooms.delete(roomId, manager);
     }
+
+    @PatchMapping("/rooms/{roomId}/status")
+    @PreAuthorize("hasRole('HOTEL_MANAGER')")
+    public RoomResponse toggleStatus(@PathVariable Long roomId, @AuthenticationPrincipal AppUser manager) {
+        return rooms.toggleStatus(roomId, manager);
+    }
 }

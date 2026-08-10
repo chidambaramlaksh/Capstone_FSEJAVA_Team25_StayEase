@@ -41,7 +41,7 @@ public class AuthService implements UserDetailsService {
     }
 
     private AuthResponse toAuthResponse(AppUser user) {
-        return new AuthResponse(user.getId(), jwtService.generateToken(user), user.getEmail(), user.getName());
+        return new AuthResponse(user.getId(), jwtService.generateToken(user), user.getEmail(), user.getName(), user.getRole().name(), user.getManagedHotelId());
     }
 
     @Override

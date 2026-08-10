@@ -151,10 +151,22 @@ export default function Home() {
       const role = String(
         authenticatedUser.role ?? authenticatedUser.userType ?? "user",
       ).toLowerCase();
+      
+      // Redirect immediately if manager or admin
+      if (role === "hotel_manager") {
+        navigate("/manager", { replace: true });
+        return;
+      }
+      if (role === "admin") {
+        navigate("/admin/home", { replace: true });
+        return;
+      }
+
+      // Regular user login
+      console.log("User login (no redirect)");
       setLoginSuccess(`Login successful (${role})`);
       setLoginForm({ email: "", password: "" });
       setIsLoginOpen(false);
-      if (role === "manager") navigate("/manager");
     } catch {
       setLoginError("Unable to sign in. Please try again.");
     } finally {

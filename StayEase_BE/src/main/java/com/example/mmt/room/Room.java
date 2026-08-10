@@ -35,6 +35,9 @@ public class Room {
     @Column(length = 1000)
     private String description;
 
+    @Column(length = 2000)
+    private String imageUrl;
+
     @Column(nullable = false)
     private int available = 1;
 
@@ -71,6 +74,7 @@ public class Room {
     public String getRoomNumber() { return roomNumber; }
     public RoomType getType() { return type; }
     public String getDescription() { return description; }
+    public String getImageUrl() { return imageUrl; }
     public BigDecimal getPricePerNight() { return pricePerNight; }
     public int getAvailable() { return available; }
     public int getMaxOccupancy() { return maxOccupancy; }
@@ -88,6 +92,20 @@ public class Room {
         }
     }
 
+    public void update(String roomNumber, RoomType type, BigDecimal pricePerNight, boolean active,
+                       Integer available, String description, String imageUrl, Integer maxOccupancy) {
+        update(roomNumber, type, pricePerNight, active, available);
+        if (description != null) {
+            this.description = description;
+        }
+        if (imageUrl != null) {
+            this.imageUrl = imageUrl;
+        }
+        if (maxOccupancy != null && maxOccupancy > 0) {
+            this.maxOccupancy = maxOccupancy;
+        }
+    }
+
     public boolean hasAvailability() {
         return active && available > 0;
     }
@@ -101,5 +119,13 @@ public class Room {
 
     public void incrementAvailable() {
         available++;
+    }
+
+    public void toggleActive() {
+        this.active = !this.active;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

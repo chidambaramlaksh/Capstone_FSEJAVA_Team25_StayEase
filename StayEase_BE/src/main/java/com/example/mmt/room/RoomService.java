@@ -41,8 +41,10 @@ public class RoomService {
         assertManagerOwnsHotel(manager, hotelId);
         Hotel hotel = requireHotel(hotelId);
         int available = request.available() == null ? 1 : request.available();
-        Room room = new Room(hotel, request.roomNumber(), request.type(), null,
-                request.pricePerNight(), available, 3);
+        int maxOccupancy = request.maxOccupancy() == null ? 3 : request.maxOccupancy();
+        Room room = new Room(hotel, request.roomNumber(), request.type(), request.description(),
+                request.pricePerNight(), available, maxOccupancy);
+        room.setImageUrl(request.imageUrl());
         return RoomResponse.from(rooms.save(room));
     }
 
@@ -50,8 +52,10 @@ public class RoomService {
     public RoomResponse update(Long roomId, RoomRequest request, AppUser manager) {
         Room room = getEntity(roomId);
         assertManagerOwnsHotel(manager, room.getHotel().getId());
+        boolean active = request.active() == null || request.active();
         room.update(request.roomNumber(), request.type(), request.pricePerNight(),
-                request.active() == null || request.active(), request.available());
+                active, request.available(), request.description(), request.imageUrl(), 
+                request.maxOccupancy());
         return RoomResponse.from(room);
     }
 
@@ -60,6 +64,14 @@ public class RoomService {
         Room room = getEntity(roomId);
         assertManagerOwnsHotel(manager, room.getHotel().getId());
         rooms.delete(room);
+    }
+
+    @Transactional
+    public RoomResponse toggleStatus(Long roomId, AppUser manager) {
+        Room room = getEntity(roomId);
+        assertManagerOwnsHotel(manager, room.getHotel().getId());
+        room.toggleActive();
+        return RoomResponse.from(room);
     }
 
     @Transactional(readOnly = true)
